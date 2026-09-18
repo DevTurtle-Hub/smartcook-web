@@ -27,7 +27,9 @@ export const RegisterPage: React.FC = () => {
         email,
         password,
       });
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      const accessToken = data.tokens?.accessToken || data.accessToken || '';
+      const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+      setAuth(data.user, accessToken, refreshToken);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Đăng ký không thành công. Vui lòng thử lại.');

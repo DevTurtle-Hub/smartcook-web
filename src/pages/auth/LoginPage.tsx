@@ -21,7 +21,9 @@ export const LoginPage: React.FC = () => {
 
     try {
       const data = await authApi.login({ email, password });
-      setAuth(data.user, data.accessToken, data.refreshToken);
+      const accessToken = data.tokens?.accessToken || data.accessToken || '';
+      const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+      setAuth(data.user, accessToken, refreshToken);
 
       // Smart redirection based on role
       if (data.user.role === 'admin') {
@@ -36,6 +38,7 @@ export const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -104,9 +107,9 @@ export const LoginPage: React.FC = () => {
 
       {/* Demo Credentials Helper */}
       <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
-        <span className="font-bold block">Tài khoản demo kiểm thử:</span>
-        <div>User: <code>user@smartcook.com</code> / <code>Password123@</code></div>
-        <div>Admin: <code>admin@smartcook.com</code> / <code>Admin123@</code></div>
+        <span className="font-bold block">Tài khoản mẫu kiểm thử:</span>
+        <div>Quản trị: <code>admin@smartcook.com</code> / <code>Admin123@</code></div>
+        <div>Người dùng: <code>user@smartcook.com</code> / <code>Password123@</code></div>
       </div>
 
       <div className="text-center pt-2">
