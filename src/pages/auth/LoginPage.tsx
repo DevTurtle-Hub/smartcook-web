@@ -69,11 +69,14 @@ export const LoginPage: React.FC = () => {
             }
           },
         });
-        (window as any).google.accounts.id.prompt();
+        (window as any).google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.warn('[SmartCook Web] Google prompt notice:', notification.getNotDisplayedReason?.());
+          }
+        });
       } else {
         // Fallback for development if Client ID is not configured yet
-        const mockGoogleToken = 'google_id_token_demo_' + Date.now();
-        const data = await authApi.googleLogin(mockGoogleToken);
+        const data = await authApi.googleLogin('dev_mock_google_id_token');
         const accessToken = data.tokens?.accessToken || data.accessToken || '';
         const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
         setAuth(data.user, accessToken, refreshToken);
@@ -183,46 +186,8 @@ export const LoginPage: React.FC = () => {
         </div>
       </form>
 
-      {/* Gợi ý tài khoản mẫu có sẵn trong Database MongoDB */}
-      <div className="bg-orange-50/70 border border-orange-200/80 rounded-xl p-3 text-xs text-slate-700 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-orange-950 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-orange-600" />
-            Tài khoản mẫu có sẵn:
-          </span>
-          <span className="text-[10px] text-orange-600 font-semibold">Bấm để tự điền</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('admin@smartcook.com');
-              setPassword('Admin123@');
-            }}
-            className="text-left p-2 rounded-lg bg-white border border-orange-200/60 hover:border-orange-400 hover:bg-orange-50 transition-all text-[11px]"
-          >
-            <div className="font-bold text-slate-800">Quản Trị (Admin)</div>
-            <div className="text-slate-500 truncate text-[10px]">admin@smartcook.com</div>
-            <div className="text-slate-400 text-[10px]">Pass: Admin123@</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('user@smartcook.com');
-              setPassword('Password123@');
-            }}
-            className="text-left p-2 rounded-lg bg-white border border-orange-200/60 hover:border-orange-400 hover:bg-orange-50 transition-all text-[11px]"
-          >
-            <div className="font-bold text-slate-800">Người Dùng (User)</div>
-            <div className="text-slate-500 truncate text-[10px]">user@smartcook.com</div>
-            <div className="text-slate-400 text-[10px]">Pass: Password123@</div>
-          </button>
-        </div>
-      </div>
-
       {/* Social login divider */}
-      <div className="relative my-3 text-center">
+      <div className="relative my-4 text-center">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-slate-300/60" />
         </div>
