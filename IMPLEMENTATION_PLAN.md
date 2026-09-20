@@ -420,390 +420,481 @@ smartcook-backend/
 
 ## 5. Thiết Kế Hệ Thống Website & Web Admin Đa Năng (`smartcook-web` - Hybrid All-in-One Architecture)
 
-Dự án áp dụng mô hình **Hybrid All-in-One (Public Showcase & User Web App + Admin Portal)** trong cùng một codebase `smartcook-web`, kết nối trực tiếp đến hệ thống Backend API (`smartcook-backend`).
+Dự án áp dụng mô hình **Hybrid All-in-One (Public Showcase & User Web App + Complete Admin Suite)** trong cùng một codebase `smartcook-web`, hiện đã hoàn thành 100% giao diện (UI/UX) và sẵn sàng tích hợp API kết nối trực tiếp đến hệ thống Backend (`smartcook-backend`).
 
 ### 5.1. Tech Stack & Thư Viện Sử Dụng
-- **Core Framework**: React 19 + Vite + TypeScript (Tốc độ HMR mili-giây, bundle tối ưu, hỗ trợ strict typing).
-- **Styling & UI Effects**: Tailwind CSS + Framer Motion (hiệu ứng mượt mà, micro-animations, glassmorphism) + Lucide React Icons.
+- **Core Framework**: React 19 + Vite 8 + TypeScript (Tốc độ HMR mili-giây, bundle tối ưu, hỗ trợ strict typing).
+- **Styling & UI Effects**: Tailwind CSS v4 (`@tailwindcss/vite`) + Font Inter & Outfit + Glassmorphism effects + Lucide React Icons.
 - **State Management & Network**:
-  - `zustand`: Quản lý Auth State (User info, Access Token, Role, Theme Dark/Light), đồng bộ an toàn qua `localStorage`.
+  - `zustand`: Quản lý Auth State (`useAuthStore`), Cart State (`useCartStore`), và Admin Mock State (`useAdminStore`).
   - `axios`: Cấu hình Base Instance, Interceptors tự động đính kèm `Bearer <token>` và cơ chế **Silent Refresh Token** khi gặp lỗi 401 (`POST /auth/refresh-token`).
-  - `@tanstack/react-query`: Cache dữ liệu server, tự động revalidate, xử lý phân trang vô tận (Infinite Scroll) cho công thức và newfeed.
+  - `@tanstack/react-query`: Quản lý server state, cache dữ liệu tự động, revalidate và hỗ trợ phân trang/infinite query.
   - `@react-oauth/google`: Đăng nhập Google One-Tap và nút "Sign in with Google" đồng bộ với endpoint `POST /auth/google`.
-  - `recharts`: Vẽ biểu đồ phân tích số liệu Dashboard chuyên nghiệp (LineChart người dùng, BarChart món ăn, PieChart dinh dưỡng).
-  - `react-dropzone`: Kéo thả upload ảnh món ăn trực tiếp lên Cloudinary thông qua Backend.
+  - `recharts`: Vẽ biểu đồ phân tích số liệu Dashboard chuyên nghiệp (LineChart người dùng, BarChart món ăn, PieChart dinh dưỡng, Doanh thu).
+  - `HTML5 Geolocation & Google Maps URL API`: Định vị siêu thị lân cận và chỉ đường bản đồ.
 
 ---
 
-### 5.2. Kiến Trúc Phân Vùng Giao Diện (Dual-Zone Architecture)
+### 5.2. Kiến Trúc Phân Vùng Giao Diện Đã Triển Khai (Actual Dual-Zone Architecture)
 
 ```mermaid
 graph TD
-    User([Khách / Người Dùng / Admin]) --> Router{React Router Dom v7}
-    Router -->|Route: / hoặc /recipes hoặc /community| PublicLayout[Public Layout - Navbar, Hero, Footer, Banner Tải App]
-    Router -->|Route: /auth/*| AuthLayout[Auth Layout - Login, Register, Google OAuth]
-    Router -->|Route: /admin/*| AdminGuard{Admin Role Guard}
-    AdminGuard -->|Hợp lệ (role: admin)| AdminLayout[Admin Layout - Sidebar, Header, Analytics]
-    AdminGuard -->|Không hợp lệ| Redirect[Chuyển hướng về /auth/login hoặc 403]
+    User([Khách / Thành Viên / Admin]) --> Router{React Router Dom v7}
+    
+    subgraph User & Public Zone
+        Router -->|Route: / hoặc /showcase| UserLanding[UserLandingPage - Showcase 21 Modules SRS & 3D Phone Mockups]
+        Router -->|Route: /recipes & /recipes/:id| RecipeViews[RecipeListPage & RecipeDetailPage - Kho món & Cooking Timer]
+        Router -->|Route: /my-kitchen| KitchenView[MyKitchenPage - Tủ lạnh ảo & So khớp món nấu ngay / thiếu đồ]
+        Router -->|Route: /scan| ScanView[AIScanPage - Giả lập AI Camera quét bàn bếp]
+        Router -->|Route: /community| CommunityView[CommunityPage - Bảng tin ẩm thực, Reactions & Comments]
+        Router -->|Route: /profile| ProfileView[ProfilePage - Thông tin cá nhân, XP & Khẩu vị]
+        Router -->|Route: /login & /register| AuthViews[LoginPage & RegisterPage - Glassmorphism Form]
+    end
+
+    subgraph Complete Admin Suite
+        Router -->|Route: /admin/*| AdminGuard{Admin Role Guard}
+        AdminGuard -->|Hợp lệ role: admin| AdminLayout[AdminLayout - Sidebar thu phóng, Topbar bộ lọc]
+        AdminLayout --> Dashboard[DashboardPage - KPIs, Doanh thu, Charts & Task List]
+        AdminLayout --> DishMgmt[DishManagementPage - CRUD Món, Kho nguyên liệu, Duyệt đóng góp, Banner]
+        AdminLayout --> CommMod[CommunityModerationPage - Kiểm duyệt bài viết, Ghim bài, Xử lý Report]
+        AdminLayout --> AIEngine[AIEnginePage - Cấu hình Gemini Prompt, Vision Scanner & Playground Chat]
+        AdminLayout --> UserMgmt[UserManagementPage - Quản lý người dùng, Tủ lạnh, Sức khỏe & RBAC]
+        AdminLayout --> Marketing[MarketingPage - Campaign Studio Push Notifications & Gói VIP]
+        AdminLayout --> Settings[SystemSettingsPage - Cài đặt hệ sinh thái]
+    end
 ```
 
-#### Phân Vùng 1: Public Zone & User Web App (Dành Cho Khách & Thành Viên)
-1. **Trang Chủ (Landing Page - `/`)**:
-   - **Hero Section**: Slogan cuốn hút, nút Call to Action ("Khám phá ngay", "Tải ứng dụng"), Mockup điện thoại iPhone 16 tương tác 3D/CSS hiển thị giao diện SmartCook Mobile, mã QR quét tải app.
-   - **Interactive Showcase**:
-     - *Tủ lạnh thông minh demo*: Người dùng có thể click chọn thử vài nguyên liệu trên web để xem thuật toán gợi ý món ăn ngay tức thì.
-     - *Trợ lý AI Vision*: Trình diễn Before/After khi đưa ảnh bàn bếp vào AI nhận diện ghim nhãn (pins).
-     - *Chế độ nấu rảnh tay (Hands-free Cooking)*: Video/Animation demo đọc giọng nói tiếng Việt từng bước nấu.
-   - **Social Proof & Stats**: Thống kê 10,000+ người dùng, 500+ công thức chuẩn Việt, đánh giá 4.9⭐ từ người dùng.
-   - **Download App Section**: Link chính thức lên Google Play & Apple App Store.
-2. **Trang Khám Phá Công Thức (`/recipes` & `/recipes/:id`)**:
-   - Bộ lọc đa tiêu chí: 14 danh mục, thời gian nấu (<20p, 30p, >1h), độ khó (Dễ, Trung bình, Khó), khẩu phần.
-   - Thanh tìm kiếm full-text tự động gợi ý.
-   - Trang chi tiết món ăn chuyên sâu: Dinh dưỡng (Calories, Protein, Carbs, Fat), danh sách nguyên liệu có thể tick chọn, các bước nấu có bộ đếm thời gian (Timer), nút "Lưu yêu thích", nút "Chia sẻ bài/món".
-3. **Trang Mạng Xã Hội Ẩm Thực (`/community`)**:
-   - Bảng tin bài đăng chia sẻ món ăn, hình ảnh thành phẩm chất lượng cao.
-   - Tương tác thả 6 loại cảm xúc (`like`, `love`, `haha`, `wow`, `sad`, `angry`).
-   - Bình luận và trả lời bình luận theo thời gian thực.
-   - Nút chia sẻ (Share) bài viết tạo bài trích dẫn.
-4. **Trang Xác Thực (`/auth/login`, `/auth/register`)**:
-   - Giao diện đăng nhập hiện đại với hiệu ứng Glassmorphism.
-   - Đăng nhập tài khoản mật khẩu hoặc Đăng nhập nhanh bằng Google.
-   - Tự động điều hướng: Nếu tài khoản là `admin` -> chuyển thẳng vào `/admin/dashboard`, nếu là `user` -> chuyển về trang chính.
-5. **Trang Thông Tin Cá Nhân (`/profile`)**:
-   - Hiển thị cấp bậc đầu bếp XP, danh sách món ăn yêu thích, lịch sử các món đã nấu.
-   - Cập nhật khẩu vị người dùng (Onboarding Survey).
+#### Phân Vùng 1: User Experience & Public Web App (Đã Hoàn Thành UI 100%)
+1. **Trang Giới Thiệu Tương Tác ([UserLandingPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/user/UserLandingPage.tsx))**:
+   - Showcase toàn diện **21 modules của SmartCook SRS** kết hợp hình ảnh 3D mockup điện thoại chân thực cho từng tính năng.
+   - Bảng so sánh trước/sau khi dùng ứng dụng, số liệu thống kê tin cậy, FAQ và QR code tải app mobile.
+2. **Thanh Header Đa Năng ([UserHeader.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/components/user/UserHeader.tsx))**:
+   - Tích hợp thanh banner nhắc nhở giỏ hàng thông minh khi có nguyên liệu cần mua.
+   - Cấp bậc đầu bếp (XP), ngọn lửa XP, level và avatar cá nhân hóa.
+3. **Trang "Bếp Của Tôi" ([MyKitchenPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/user/MyKitchenPage.tsx))**:
+   - Quản lý tủ lạnh thông minh: phân loại 3 nhóm (Thịt/Hải sản, Rau củ, Gia vị/Tinh bột).
+   - Thuật toán so khớp nguyên liệu: Lọc các món **"Nấu được ngay"** (đủ 100% nguyên liệu) và các món **"Thiếu 1-2 nguyên liệu"**.
+   - Nút đẩy nguyên liệu thiếu vào Giỏ đi chợ hoặc mở Modal tìm siêu thị gần nhất.
+4. **Modal Định Vị Siêu Thị Lân Cận ([NearbySupermarketsModal.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/components/supermarket/NearbySupermarketsModal.tsx))**:
+   - Định vị GPS tìm các chuỗi siêu thị (WinMart, Co.opmart, Bách Hóa Xanh, Lotte, AEON...).
+   - Tính khoảng cách km, giờ mở cửa, số hotline, nút chỉ đường Google Maps kèm danh sách nguyên liệu cần mua.
+5. **Giỏ Đi Chợ Thông Minh ([GroceryCartDrawer.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/components/user/GroceryCartDrawer.tsx) & [useCartStore.ts](file:///e:/FPTU/Term07/project/smartcook-web/src/store/useCartStore.ts))**:
+   - Drawer giỏ hàng trượt từ cạnh phải, tự động lưu `localStorage`.
+   - Tính tổng chi phí ước tính (VNĐ) dựa trên giá thị trường chuẩn Việt Nam.
+6. **Mô Phỏng Quét Ảnh AI ([AIScanPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/user/AIScanPage.tsx))**:
+   - Giả lập camera AI nhận diện nguyên liệu có bounding box và hướng dẫn cài đặt app mobile.
+7. **Kho Món Ăn & Chi Tiết Công Thức ([RecipeListPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/public/RecipeListPage.tsx) & [RecipeDetailPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/public/RecipeDetailPage.tsx))**:
+   - Danh sách món ăn đa dạng (Cơm đùi gà trứng ốp, Thịt kho tàu...), lọc theo danh mục, độ khó, thời gian.
+   - Trang chi tiết có bộ đếm giờ (Cooking Timer), bảng calo dinh dưỡng, ước tính chi phí và nút thêm nhanh nguyên liệu vào giỏ đi chợ.
+8. **Mạng Xã Hội Ẩm Thực ([CommunityPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/public/CommunityPage.tsx))**:
+   - Bảng tin bài đăng chia sẻ món ăn, thả 6 loại cảm xúc (`like`, `love`, `haha`, `wow`, `sad`, `angry`), bình luận và chia sẻ.
 
-#### Phân Vùng 2: Admin Portal (`/admin/*` - Được Bảo Vệ Bởi `AdminAuthGuard`)
-1. **Trang Tổng Quan Quản Trị (`/admin/dashboard`)**:
-   - **KPI Cards**: Tổng người dùng mới, tổng công thức hoạt động, số lượt quét AI hôm nay, tổng bài đăng cộng đồng.
-   - **Biểu đồ trực quan (Recharts)**:
-     - Biểu đồ đường (LineChart): Tăng trưởng người dùng mới theo tuần/tháng.
-     - Biểu đồ cột (BarChart): Top 10 món ăn được nấu nhiều nhất trong tuần.
-     - Biểu đồ tròn (PieChart): Phân bổ các nhóm nguyên liệu tủ lạnh phổ biến nhất.
-2. **Quản Lý Công Thức Món Ăn (`/admin/recipes`)**:
-   - Bảng danh sách công thức: Phân trang server-side, tìm kiếm theo tên, lọc theo độ khó/danh mục, bật/tắt hiển thị.
-   - Form Thêm/Sửa công thức chuẩn MasterChef: Kéo thả upload ảnh lên Cloudinary, tạo nguyên liệu định lượng chuẩn, thêm nhiều bước nấu có hẹn giờ phút, hệ thống tự động bóc tách dinh dưỡng.
-3. **Quản Lý Nguyên Liệu & Danh Mục (`/admin/ingredients`)**:
-   - Quản lý 14 nhóm nguyên liệu tủ lạnh.
-   - Thêm từ đồng nghĩa (aliases) cho từng nguyên liệu để AI nhận diện chuẩn xác tiếng Việt vùng miền.
-4. **Quản Lý Hệ Thống Siêu Thị GPS (`/admin/stores`)**:
-   - Danh sách chuỗi siêu thị (WinMart, Co.opmart, Tops Market...).
-   - Nhập toạ độ GPS (`latitude`, `longitude`), địa chỉ, giờ mở cửa, số điện thoại để phục vụ Mobile tìm kiếm siêu thị lân cận qua `$geoNear`.
-5. **Kiểm Duyệt Cộng Đồng (`/admin/community`)**:
-   - Danh sách bài viết người dùng chia sẻ, quản lý bình luận.
-   - Tính năng ghim bài nổi bật (`isPinned`) hoặc xoá các bài đăng/bình luận vi phạm tiêu chuẩn cộng đồng.
-6. **Quản Lý Người Dùng (`/admin/users`)**:
-   - Danh sách tài khoản thành viên, xem cấp bậc đầu bếp XP.
-   - Khoá hoặc kích hoạt lại tài khoản (`isActive: true/false`), phân quyền quản trị viên (`role: 'admin'`).
+#### Phân Vùng 2: Phân Hệ Quản Trị Hệ Thống Toàn Diện (Admin Suite - Đã Hoàn Thành UI 100%)
+1. **Khung Quản Trị ([AdminLayout.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/layouts/AdminLayout.tsx))**:
+   - Sidebar cố định sát mép màn hình, hỗ trợ thu hẹp/mở rộng (`collapsed`).
+   - Topbar tích hợp bộ lọc nâng cao theo phạm vi dữ liệu, trạng thái và mốc thời gian.
+2. **Dashboard Thống Kê ([DashboardPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/DashboardPage.tsx))**:
+   - KPIs người dùng và tài chính (Doanh thu thực tế, mục tiêu tháng, % đạt được).
+   - Biểu đồ tăng trưởng người dùng mới (LineChart) và Top món ăn nấu nhiều nhất (BarChart).
+   - Danh sách công việc quản trị cần xử lý (Task list).
+3. **Quản Lý Món Ăn & Kho Nguyên Liệu ([DishManagementPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/DishManagementPage.tsx))**:
+   - **Tab Món ăn**: Lọc theo danh mục, phân khúc giá (<20k, 20-50k, >50k), Modal Thêm/Sửa công thức đầy đủ trường (nguyên liệu, các bước nấu có timer, macro Protein/Carb/Fat/Fiber).
+   - **Tab Kho nguyên liệu**: Quản lý 14 nhóm nguyên liệu, hạn dùng (shelf-life), từ đồng nghĩa (synonyms) cho AI.
+   - **Tab Duyệt đóng góp**: Phê duyệt hoặc từ chối công thức từ cộng đồng người dùng.
+   - **Tab Banner**: Cấu hình món ăn nổi bật hiển thị trên Hero Banner của Mobile.
+4. **Kiểm Duyệt Cộng Đồng ([CommunityModerationPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/CommunityModerationPage.tsx))**:
+   - Quản lý danh sách bài viết, ghim bài nổi bật (`isPinned`), ẩn bài, gắn nhãn spam.
+   - Hộp thư xử lý báo cáo vi phạm (Spam, nội dung phản cảm, sai món).
+5. **Người Dùng & Phân Quyền ([UserManagementPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/UserManagementPage.tsx))**:
+   - Danh sách tài khoản: Xem chi tiết số món trong tủ lạnh, đồ sắp hết hạn, lịch sử nấu ăn, mục tiêu sức khỏe, dị ứng.
+   - Khóa/Mở tài khoản (`active`, `suspended`, `banned`), nâng cấp gói VIP, phân quyền nhân sự (RBAC).
+6. **Cấu Hình Trí Tuệ Nhân Tạo ([AIEnginePage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/AIEnginePage.tsx))**:
+   - Tinh chỉnh System Prompt, Temperature, chọn mô hình (Gemini 2.5 Flash, Gemini 1.5 Pro).
+   - Điều chỉnh ngưỡng nhận diện AI Vision Scanner, xem nhật ký quét ảnh gần đây.
+   - Hộp chat thử nghiệm phản hồi AI (Live Playground) ngay trên trang.
+7. **Thông Báo & Marketing ([MarketingPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/MarketingPage.tsx))**:
+   - Campaign Studio: Thiết kế và lên lịch gửi Push Notification tới Mobile (gợi ý bữa trưa, bữa tối, khuyến mãi).
+   - Quản lý bảng giá gói thành viên VIP Premium.
+8. **Cài Đặt Hệ Thống ([SystemSettingsPage.tsx](file:///e:/FPTU/Term07/project/smartcook-web/src/pages/admin/SystemSettingsPage.tsx))**: Cấu hình chung hệ sinh thái.
 
 ---
 
-### 5.3. Cấu Trúc Thư Mục Dự Án `smartcook-web`
+### 5.3. Cấu Trúc Thư Mục Thực Tế Dự Án `smartcook-web`
 
 ```text
 smartcook-web/
-├── public/                 # Favicon, logo, ảnh minh hoạ demo
+├── public/                     # Favicon, 3D app screens, mockups, banners
+│   ├── app-screens/            # Hình ảnh mockup 3D screens của app mobile
+│   └── ...
 ├── src/
-│   ├── api/                # Cấu hình Axios Interceptors & React Query Hooks
-│   │   ├── client.ts       # Axios instance, Bearer Token, Silent Refresh Token logic
-│   │   ├── auth.api.ts     # Login, Register, Google Auth, Me, Survey
-│   │   ├── recipe.api.ts   # CRUD Recipes, Filter, Favorites
-│   │   ├── ingredient.api.ts # Categories & Ingredients
-│   │   ├── community.api.ts# Posts, Reactions, Comments, Share
-│   │   ├── store.api.ts    # Siêu thị & Toạ độ GPS
-│   │   └── admin.api.ts    # Dashboard Stats, User Management, Moderation
-│   ├── assets/             # Hình ảnh, icons, mockup điện thoại
-│   ├── components/         # Reusable UI Components (Design System)
-│   │   ├── ui/             # Button, Input, Modal, Badge, Dropdown, Card, Tooltip
-│   │   ├── common/         # Navbar, Footer, PhoneMockup, QRDownload, EmptyState
-│   │   ├── recipe/         # RecipeCard, CookingTimer, NutritionBadge
-│   │   ├── community/      # PostCard, ReactionPicker (6 emojis), CommentItem
-│   │   └── admin/          # StatCard, DataTable, Sidebar, PageHeader
+│   ├── api/                    # Tầng giao tiếp mạng Axios & API Endpoints
+│   │   ├── client.ts           # Axios instance, Bearer Token, Silent Refresh Token logic
+│   │   ├── auth.api.ts         # Login, Register, Google Auth, Me, Survey
+│   │   ├── recipe.api.ts       # CRUD Recipes, Filter, Favorites, Fridge Match
+│   │   ├── fridge.api.ts       # [Kế hoạch] Quản lý tủ lạnh cá nhân GET/POST/DELETE
+│   │   ├── ingredient.api.ts   # [Kế hoạch] Categories & 14 nhóm nguyên liệu chuẩn
+│   │   ├── store.api.ts        # [Kế hoạch] Siêu thị đối tác & GeoSpatial GPS
+│   │   ├── community.api.ts    # Posts, Reactions, Comments, Share
+│   │   └── admin.api.ts        # Dashboard KPIs, Users, Moderation, AI & Marketing
+│   ├── components/
+│   │   ├── supermarket/        # NearbySupermarketsModal.tsx (GPS Siêu thị gần nhất)
+│   │   └── user/               # UserHeader.tsx, GroceryCartDrawer.tsx, RealisticPhoneFrame.tsx
 │   ├── layouts/
-│   │   ├── PublicLayout.tsx# Dành cho Trang chủ, Khám phá công thức, Cộng đồng
-│   │   ├── AuthLayout.tsx  # Dành cho Login, Register
-│   │   └── AdminLayout.tsx # Dành cho Phân vùng Quản trị (Sidebar + Header)
+│   │   ├── AdminLayout.tsx     # Sidebar thu phóng, Topbar bộ lọc nâng cao
+│   │   ├── AuthLayout.tsx      # Khung đăng nhập, đăng ký Glassmorphism
+│   │   └── PublicLayout.tsx    # Khung public dự phòng
 │   ├── pages/
-│   │   ├── public/         # LandingPage, RecipeListPage, RecipeDetailPage, CommunityPage
-│   │   ├── auth/           # LoginPage, RegisterPage
-│   │   ├── user/           # ProfilePage, MyFavoritesPage
-│   │   └── admin/          # DashboardPage, RecipeListPage, RecipeFormPage, StorePage, UserPage
-│   ├── routes/             # AppRoutes.tsx, AdminGuard.tsx, AuthGuard.tsx
-│   ├── store/              # useAuthStore.ts (Zustand)
-│   ├── types/              # TypeScript Interfaces khớp 100% Backend DTO
-│   ├── utils/              # formatCurrency, formatDate, imageHelpers
+│   │   ├── admin/              # DashboardPage, DishManagementPage, CommunityModerationPage,
+│   │   │                       # UserManagementPage, AIEnginePage, MarketingPage, SystemSettingsPage
+│   │   ├── auth/               # LoginPage, RegisterPage
+│   │   ├── public/             # RecipeListPage, RecipeDetailPage, CommunityPage
+│   │   └── user/               # UserLandingPage, MyKitchenPage, AIScanPage, ProfilePage
+│   ├── routes/
+│   │   └── AppRoutes.tsx       # Định tuyến React Router v7, ProtectedUserRoute, AdminGuard
+│   ├── store/
+│   │   ├── useAuthStore.ts     # Quản lý User, JWT Token, Role, Logout
+│   │   ├── useCartStore.ts     # Quản lý Giỏ Đi Chợ Thông Minh (Persist localStorage)
+│   │   └── useAdminStore.ts    # Quản lý State & Mock Data hoàn chỉnh cho Admin Suite
+│   ├── types/
+│   │   ├── index.ts            # User, Recipe, Post, ApiResponse DTOs
+│   │   └── admin.ts            # Toàn bộ Types chi tiết cho Admin Suite & SRS Modules
 │   ├── App.tsx
 │   ├── main.tsx
-│   └── index.css           # Tailwind directives, custom glassmorphism styles
-├── index.html
+│   └── index.css               # Tailwind directives, font config, custom scrollbar
 ├── package.json
-├── tailwind.config.js
 ├── tsconfig.json
 └── vite.config.ts
 ```
 
 ---
 
-### 5.4. Kế Hoạch Triển Khai Chi Tiết smartcook-web (Step-by-Step Implementation Blueprint)
+### 5.4. Bảng Ánh Xạ Tích Hợp API Backend ➔ Frontend Web (API Integration Matrix)
 
-Để hiện thực hoá trang Web chuyên nghiệp này, quy trình triển khai được chuẩn hoá qua 6 giai đoạn kỹ thuật rõ ràng:
+Dưới đây là ma trận ánh xạ toàn bộ màn hình UI đã có sang các Endpoints Backend:
 
-#### 1. Khởi Tạo Dự Án & Thiết Lập Môi Trường (Initialization)
-- Tạo project song song với backend:
-  ```bash
-  cd e:\FPTU\Term07\project
-  npm create vite@latest smartcook-web -- --template react-ts
-  cd smartcook-web
-  ```
-- Cài đặt bộ dependencies chuẩn production:
-  ```bash
-  # Routing, Server state & Client state
-  npm install react-router-dom @tanstack/react-query zustand axios
-  # UI, Icons, Animations & Charts
-  npm install lucide-react framer-motion recharts clsx tailwind-merge
-  # Google Auth & Media Upload
-  npm install @react-oauth/google react-dropzone
-  # Dev tools & Styling
-  npm install -D tailwindcss postcss autoprefixer
-  npx tailwindcss init -p
-  ```
-- Cấu hình file biến môi trường `.env`:
-  ```env
-  VITE_API_BASE_URL=http://localhost:5000/api/v1
-  VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-  VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-  ```
-
-#### 2. Xây Dựng Tầng Network & Silent Refresh Token Interceptor (`src/api/client.ts`)
-- Khởi tạo Axios Instance với `baseURL: import.meta.env.VITE_API_BASE_URL`.
-- **Request Interceptor**: Tự động lấy `accessToken` từ `useAuthStore` gắn vào Header:
-  `Authorization: Bearer <accessToken>`.
-- **Response Interceptor (Cơ chế Silent Refresh mượt mà)**:
-  - Khi API trả về lỗi `401 Unauthorized`:
-    1. Tạm dừng các request tiếp theo vào hàng đợi (*Queue*).
-    2. Gọi `POST /api/v1/auth/refresh-token` với `refreshToken` lưu trong store.
-    3. Nhận cặp token mới -> Cập nhật store -> Thực thi lại request bị 401 ban đầu.
-    4. Nếu `refreshToken` cũng hết hạn -> Xoá store -> Chuyển hướng về `/auth/login`.
-
-#### 3. Bảng Ánh Xạ Tích Hợp API Backend ➔ Frontend Web (API Integration Matrix)
-
-| Chức Năng Trên Web | Backend API Endpoint | Method | Phân Vùng Sử Dụng |
-| :--- | :--- | :--- | :--- |
-| Đăng nhập tài khoản | `/api/v1/auth/login` | POST | Public Auth |
-| Đăng nhập Google | `/api/v1/auth/google` | POST | Public Auth |
-| Đăng ký tài khoản | `/api/v1/auth/register` | POST | Public Auth |
-| Cấp lại token ngầm | `/api/v1/auth/refresh-token` | POST | Global Interceptor |
-| Lấy thông tin cá nhân | `/api/v1/auth/me` | GET | Global Header / Profile |
-| Cập nhật khẩu vị | `/api/v1/auth/survey` | POST | User Profile |
-| Khám phá công thức | `/api/v1/recipes` | GET | Public / Recipes Page |
-| Chi tiết công thức | `/api/v1/recipes/:id` | GET | Public / Recipe Details |
-| Thích công thức | `/api/v1/recipes/:id/favorite`| POST | User Recipes |
-| Danh mục & Nguyên liệu| `/api/v1/categories`, `/ingredients` | GET | Public Filters & Admin |
-| Newfeed Cộng đồng | `/api/v1/posts` | GET | Public Community |
-| Đăng bài + Upload ảnh | `/api/v1/posts` | POST | User Community |
-| Thả cảm xúc 6 loại | `/api/v1/posts/:id/react` | POST | User Community |
-| Chia sẻ bài viết | `/api/v1/posts/:id/share` | POST | User Community |
-| Bình luận bài viết | `/api/v1/posts/:id/comments` | POST | User Community |
-| Thống kê Dashboard | `/api/v1/admin/dashboard` | GET | Admin Only |
-| CRUD Công thức Admin| `/api/v1/recipes` (CRUD) | POST/PUT/DELETE | Admin Only |
-| Quản lý Siêu thị GPS| `/api/v1/stores` (CRUD) | GET/POST/PUT/DELETE | Admin Only |
-| Quản lý Thành viên | `/api/v1/admin/users` | GET/PATCH | Admin Only |
-
-#### 4. Lộ Trình Triển Khai smartcook-web Qua 6 Bước (Phases W1 -> W6)
-- **Phase W1: Nền tảng Core, State & Auth Flow (Ngày 1)**:
-  - Thiết lập dự án, Tailwind CSS typography, Google Fonts (Inter / Outfit).
-  - Hoàn thiện `useAuthStore`, `src/api/client.ts`, màn hình Login & Register với phong cách Glassmorphism.
-  - Tích hợp Đăng nhập Google 1-chạm (`@react-oauth/google`).
-  - Xây dựng các Route Guards: `AuthGuard`, `AdminGuard`.
-- **Phase W2: Landing Page & Public Showcase Đỉnh Cao (Ngày 2)**:
-  - Hero Section: Typography lớn, Gradient sống động, nút CTA "Trải nghiệm ngay", Mockup điện thoại iPhone 16 tương tác 3D/CSS.
-  - Interactive Showcase: Widget Tủ lạnh ảo click chọn nguyên liệu hiển thị món ăn gợi ý, demo AI Vision nhận diện bàn bếp, demo chế độ nấu bằng giọng nói.
-  - QR Code quét tải ứng dụng trên App Store / Google Play.
-- **Phase W3: Trang Khám Phá & Chi Tiết Công Thức (Ngày 3)**:
-  - Trang `/recipes`: Thanh tìm kiếm full-text, bộ lọc 14 danh mục, độ khó, thời gian.
-  - Trang `/recipes/:id`: Bảng calo dinh dưỡng (Calories, Carbs, Protein, Fat), danh sách nguyên liệu có checkbox tick chọn, các bước nấu có bộ đếm giờ (Timer) bấm bắt đầu/tạm dừng, nút lưu yêu thích.
-  - Cấu hình thẻ OpenGraph (og:image, og:title) để khi chia sẻ link lên Facebook/Zalo sẽ hiển thị thẻ xem trước cực đẹp.
-- **Phase W4: Mạng Xã Hội Ẩm Thực Cộng Đồng (Ngày 4)**:
-  - Bảng tin `/community`: Danh sách bài đăng hình ảnh món ăn thành phẩm từ người dùng.
-  - Tương tác 6 loại cảm xúc (`like`, `love`, `haha`, `wow`, `sad`, `angry`) kèm popover hiệu ứng nhấc nổi.
-  - Khung bình luận realtime và modal trích dẫn chia sẻ bài viết (Share Post).
-- **Phase W5: Phân Vùng Quản Trị Admin Portal (Ngày 5)**:
-  - Layout Admin: Sidebar chuyển trang mượt mà, Topbar quản lý profile và thông báo.
-  - Dashboard: KPI cards, biểu đồ Recharts (Tăng trưởng user, top món nấu nhiều nhất).
-  - Quản trị công thức: Bảng phân trang, Form thêm/sửa công thức kéo thả ảnh tải lên Cloudinary.
-  - Quản trị nguyên liệu, chuỗi siêu thị GPS và kiểm duyệt bài viết cộng đồng.
-- **Phase W6: Kiểm Thử Toàn Diện, Responsive & Build Production (Ngày 6)**:
-  - Kiểm thử hiển thị trên 4 dải màn hình: Mobile (<640px), Tablet (768px), Laptop (1024px), 4K Desktop (1920px+).
-  - Tối ưu hiệu năng Lighthouse: Lazy load hình ảnh (`loading="lazy"`), Code-splitting router (`React.lazy`).
-  - Chạy `npm run build` xác nhận bundle TypeScript sạch sẽ 100%.
+| Màn Hình Trên Web | Tính Năng / Hành Động | Backend API Endpoint | Method | Trạng Thái Backend Hiện Tại |
+| :--- | :--- | :--- | :--- | :--- |
+| `LoginPage`, `RegisterPage` | Đăng nhập tài khoản | `/api/v1/auth/login` | POST | ✅ Đã có (Giai đoạn 1) |
+| `LoginPage` | Đăng nhập Google 1-chạm | `/api/v1/auth/google` | POST | ✅ Đã có (Giai đoạn 1) |
+| `RegisterPage` | Đăng ký tài khoản mới | `/api/v1/auth/register` | POST | ✅ Đã có (Giai đoạn 1) |
+| Toàn bộ Web (Interceptor) | Cấp lại token ngầm khi 401 | `/api/v1/auth/refresh-token` | POST | ✅ Đã có (Giai đoạn 1) |
+| `UserHeader`, `ProfilePage` | Lấy thông tin user hiện tại | `/api/v1/auth/me` | GET | ✅ Đã có (Giai đoạn 1) |
+| `ProfilePage` | Cập nhật khẩu vị & mục tiêu | `/api/v1/auth/survey` | POST | ✅ Đã có (Giai đoạn 1) |
+| `RecipeListPage` | Danh sách món ăn (search, filter) | `/api/v1/recipes` | GET | ✅ Đã có (Giai đoạn 1) |
+| `RecipeDetailPage` | Chi tiết công thức, timer, calo | `/api/v1/recipes/:id` | GET | ✅ Đã có (Giai đoạn 1) |
+| `RecipeDetailPage` | Thêm / Bỏ yêu thích công thức | `/api/v1/recipes/:id/favorite` | POST | ✅ Đã có (Giai đoạn 1) |
+| `MyKitchenPage` | Lấy đồ đang có trong tủ lạnh | `/api/v1/fridge/my-fridge` | GET | ✅ Đã có (Giai đoạn 1) |
+| `MyKitchenPage` | Thêm nguyên liệu vào tủ lạnh | `/api/v1/fridge/items` | POST | ✅ Đã có (Giai đoạn 1) |
+| `MyKitchenPage` | Xóa nguyên liệu khỏi tủ lạnh | `/api/v1/fridge/items/:id` | DELETE | ✅ Đã có (Giai đoạn 1) |
+| `MyKitchenPage` | Gợi ý món tối ưu từ tủ lạnh | `/api/v1/recipes/fridge-match` | GET | ✅ Đã có (Giai đoạn 1) |
+| `DashboardPage` | KPIs, biểu đồ tăng trưởng, top món | `/api/v1/admin/dashboard` | GET | ✅ Đã có (Giai đoạn 1) |
+| `DishManagementPage` | CRUD Món ăn kèm upload ảnh | `/api/v1/recipes` | POST/PUT/DELETE | ✅ Đã có (Giai đoạn 1) |
+| `DishManagementPage` | Danh mục & 14 nhóm nguyên liệu | `/api/v1/categories`, `/ingredients` | GET/POST/PUT | ✅ Đã có (Giai đoạn 1) |
+| `UserManagementPage` | Danh sách người dùng & khóa/mở | `/api/v1/admin/users`, `.../status` | GET/PATCH | ✅ Đã có (Giai đoạn 1) |
+| `CommunityPage` | Tải Newfeed bài đăng cộng đồng | `/api/v1/posts` | GET | 🟡 Kế hoạch Giai đoạn 2 (Community API) |
+| `CommunityPage` | Đăng bài kèm ảnh Cloudinary | `/api/v1/posts` | POST | 🟡 Kế hoạch Giai đoạn 2 (Community API) |
+| `CommunityPage` | Thả 6 cảm xúc cho bài viết | `/api/v1/posts/:id/react` | POST | 🟡 Kế hoạch Giai đoạn 2 (Community API) |
+| `CommunityPage` | Bình luận bài viết | `/api/v1/posts/:id/comments` | POST | 🟡 Kế hoạch Giai đoạn 2 (Community API) |
+| `CommunityModerationPage` | Ghim bài / Xóa bài vi phạm | `/api/v1/admin/community/posts` | GET/PATCH/DELETE | 🟡 Kế hoạch Giai đoạn 2 (Community API) |
+| `NearbySupermarketsModal` | Tìm siêu thị gần nhất theo GPS | `/api/v1/stores/nearby` | GET | 🟡 Kế hoạch Giai đoạn 3 (Stores GeoSpatial GPS) |
+| `AIScanPage` | Quét ảnh tủ lạnh nhận diện nguyên liệu | `/api/v1/ai/scan` | POST | 🟡 Kế hoạch Giai đoạn 4 (Gemini Vision) |
+| `AIEnginePage` | Cấu hình Gemini prompt & Live Chat | `/api/v1/admin/ai/config`, `/ai/chat` | GET/PUT/POST | 🟡 Kế hoạch Giai đoạn 4 (Gemini AI Engine) |
+| `MarketingPage` | Lên lịch gửi Push Notifications | `/api/v1/admin/marketing/push` | GET/POST | 🟡 Kế hoạch Giai đoạn 5 (Push Marketing) |
 
 ---
 
 ## 6. Lộ Trình Triển Khai Chi Tiết (Implementation Phases)
 
-### Giai đoạn 1: Khởi Tạo Cấu Trúc Backend & Base Authentication [ĐÃ HOÀN THÀNH 100%]
-- [x] Cài đặt các thư viện cần thiết: `mongoose`, `jsonwebtoken`, `bcryptjs`, `cors`, `helmet`, `joi`, `dotenv`, `@google/genai`, `multer`, `cloudinary`, `google-auth-library`.
-- [x] Thiết lập chuẩn TypeScript, kết nối MongoDB Atlas an toàn, cấu hình biến môi trường `.env` & `.env.example`.
-- [x] Triển khai Bộ xử lý lỗi toàn cục (`GlobalErrorHandler`), custom error classes và chuẩn hoá định dạng phản hồi API (`ApiResponse`, `asyncHandler`).
-- [x] Xây dựng Module Auth hoàn chỉnh:
-  - [x] Đăng ký (`POST /auth/register`)
-  - [x] Đăng nhập (`POST /auth/login`)
-  - [x] Đăng nhập bằng Google (`POST /auth/google` - OpenID Connect & Account Linking)
-  - [x] Cấp lại token xoay vòng bảo mật (`POST /auth/refresh-token` - RFC 7519 `jti` Rotation Protection)
-  - [x] Đăng xuất thu hồi token (`POST /auth/logout`)
-  - [x] Lấy thông tin cá nhân (`GET /auth/me`)
-  - [x] Cập nhật thông tin profile (`PUT /auth/profile`)
-  - [x] Cập nhật khảo sát khẩu vị Onboarding (`POST /auth/survey`)
-- [x] Tách module tài liệu OpenAPI / Swagger (`src/docs/auth.swagger.ts`, `src/docs/health.swagger.ts`).
-- [x] Tạo bộ Postman Collection hoàn chỉnh (`SmartCook_API_Collection.json`) kèm auto-save token.
-- [x] Đã chạy pass toàn bộ bộ test tích hợp và merge vào nhánh `main`.
+> **Quy Ước Nhãn Dán Trực Quan**:
+> - 🟢 **`[BE ĐÃ IMPLEMENT]`**: Backend đã code xong 100%, có sẵn Model, Controller, Route, Swagger và kết nối MongoDB.
+> - 🟡 **`[BE CẦN BỔ SUNG MỚI]`**: Backend chưa có, cần tạo mới Model, Controller, Service và Endpoints tương ứng.
+> - 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**: Frontend đã code xong giao diện 100%, chỉ cần viết API client service và gắn data thật thay thế Mock State.
+> - 🟣 **`[FE TỐI ƯU & TEST]`**: Tối ưu hiệu năng, Code Splitting, Toast thông báo và kiểm thử luồng người dùng.
+
+```mermaid
+graph TD
+    subgraph DONE["HIỆN TRẠNG ĐÃ HOÀN THÀNH (DONE)"]
+        D1["Backend: 7 Core Modules ĐÃ IMPLEMENT XONG"]
+        D2["Frontend Web: 78 Components & 17 Pages UI ĐÃ XONG 100%"]
+    end
+
+    subgraph ROADMAP["LỘ TRÌNH THỰC THI 5 GIAI ĐOẠN TIẾP THEO (ACTION PLAN)"]
+        G1["Giai đoạn 1: Kết Nối Core API Đã Có Vào Web (Auth, Tủ Lạnh, Món Ăn, Admin)"]
+        G2["Giai đoạn 2: Bổ Sung Backend & Kết Nối Cộng Đồng (Posts, Reactions, Comments)"]
+        G3["Giai đoạn 3: Bổ Sung Backend & Kết Nối Siêu Thị GPS (Stores, GeoSpatial $geoNear)"]
+        G4["Giai đoạn 4: Bổ Sung Backend & Kết Nối AI (Gemini Vision Scan & Chat Playground)"]
+        G5["Giai đoạn 5: Tối Ưu Bundle, Toast Phản Hồi, Dual-Mode & Kiểm Thử E2E Toàn Diện"]
+        G1 --> G2 --> G3 --> G4 --> G5
+    end
+```
 
 ---
 
-### Giai đoạn 2: Quản Lý Nguyên Liệu, Tủ Lạnh & Công Thức Món Ăn [ĐÃ HOÀN THÀNH 100%]
-- [x] **2.1. Module Danh Mục (Category Module)**:
-  - [x] Model `Category.ts` & Repository `category.repository.ts` (mã code, icon, tên, thứ tự hiển thị).
-  - [x] Service, Controller, Route `GET /categories` (dành cho Mobile tabs filter) & CRUD dành cho Admin.
-  - [x] Swagger docs `src/docs/category.swagger.ts`.
-- [x] **2.2. Module Thư Viện Nguyên Liệu Chuẩn (Ingredients Module)**:
-  - [x] Model `Ingredient.ts` & Repository `ingredient.repository.ts` (14 nhóm nguyên liệu tủ lạnh, aliases từ đồng nghĩa, đơn vị đo, giá tham khảo).
-  - [x] Script Seed Data `src/data/seedIngredients.ts`: Nạp sẵn 58 nguyên liệu chuẩn từ `FridgeView.tsx` vào MongoDB Atlas.
-  - [x] API tìm kiếm nguyên liệu theo từ khoá, lọc theo nhóm (`GET /ingredients?category=...&search=...`).
-  - [x] Swagger docs `src/docs/ingredient.swagger.ts`.
-- [x] **2.3. Module Tủ Lạnh Thông Minh Người Dùng (User Fridge Module)**:
-  - [x] Model `UserFridge.ts` & Repository `fridge.repository.ts` (lưu trữ danh sách nguyên liệu trong tủ lạnh của từng user, ngày thêm, hạn sử dụng, số lượng, đơn vị, trạng thái).
-  - [x] API lấy đồ trong tủ lạnh (`GET /fridge/my-fridge`).
-  - [x] API thêm/sửa/xoá nguyên liệu vào tủ lạnh (`POST /fridge/items`, `PUT /fridge/items/:id`, `DELETE /fridge/items/:id`).
-  - [x] API dọn sạch tủ lạnh (`DELETE /fridge/clear`).
-  - [x] Swagger docs `src/docs/fridge.swagger.ts`.
-- [x] **2.4. Module Công Thức Món Ăn (Recipe Module)**:
-  - [x] Model `Recipe.ts` & Repository `recipe.repository.ts` (công thức, khẩu phần chuẩn `servingsCount`, mảng nguyên liệu `ingredients`, các bước nấu `steps` có `timerMinutes`, dinh dưỡng `nutrition`, độ khó, thời gian).
-  - [x] Script Seed Data `src/data/seedRecipes.ts`: Nạp 5 công thức món ăn chuẩn chất lượng cao.
-  - [x] API danh sách công thức: Phân trang, tìm kiếm full-text, lọc theo danh mục, thời gian nấu, độ khó (`GET /recipes`).
-  - [x] API chi tiết công thức (`GET /recipes/:id`).
-  - [x] API công thức yêu thích (`POST /recipes/:id/favorite`).
-  - [x] Swagger docs `src/docs/recipe.swagger.ts`.
-- [x] **2.5. Thuật Toán Xếp Hạng & Khớp Tủ Lạnh (Fridge Match Ranking Algorithm)**:
-  - [x] Xây dựng service tính toán tỉ lệ phần trăm trùng khớp (`fridgeMatchPercent = (số nguyên liệu có sẵn / tổng nguyên liệu) * 100%`) hỗ trợ mapping từ đồng nghĩa (aliases) & normalized Vietnamese.
-  - [x] API gợi ý món ăn tối ưu từ tủ lạnh (`GET /recipes/fridge-match`): Tự động sắp xếp các món có tỉ lệ khớp cao nhất lên đầu, liệt kê rõ nguyên liệu đã có và nguyên liệu cần mua thêm.
-- [x] **2.6. Tích hợp & Kiểm thử**:
-  - [x] Chạy test tích hợp tự động 5/5 kịch bản thành công 100%.
-  - [x] Bổ sung 7 endpoints mới vào `SmartCook_API_Collection.json`.
+### 6.1. Tổng Hợp Hiện Trạng Source Code (Những Gì ĐÃ LÀM & CODE ĐÃ CÓ SẴN)
+
+#### A. Phía Backend (`smartcook-backend`) - ĐÃ IMPLEMENT XONG 100% CÁC MODULES CORE:
+- 🟢 **Auth Module (`src/routes/auth.routes.ts`)**:
+  - `POST /api/v1/auth/register` (Tạo tài khoản, mã hóa mật khẩu bcrypt).
+  - `POST /api/v1/auth/login` (Xác thực tài khoản, sinh cặp Access & Refresh Token JWT).
+  - `POST /api/v1/auth/google` (Đăng nhập 1-chạm bằng tài khoản Google).
+  - `POST /api/v1/auth/refresh-token` (Cấp mới Access Token ngầm).
+  - `POST /api/v1/auth/logout` (Hủy token phiên đăng nhập).
+  - `GET /api/v1/auth/me` (Lấy thông tin profile, avatar, điểm XP, cấp bậc).
+  - `POST /api/v1/auth/survey` (Lưu thông tin khảo sát khẩu vị, dị ứng, mục tiêu dinh dưỡng).
+- 🟢 **Category Module (`src/routes/category.routes.ts`)**:
+  - `GET /api/v1/categories` (Lấy danh sách phân loại món ăn).
+  - `POST/PUT/DELETE /api/v1/categories` (Admin quản lý danh mục).
+- 🟢 **Ingredient Module (`src/routes/ingredient.routes.ts`)**:
+  - `GET /api/v1/ingredients` (Tìm kiếm nguyên liệu theo từ khóa, lọc theo 14 nhóm chuẩn).
+- 🟢 **User Fridge Module (`src/routes/fridge.routes.ts`)**:
+  - `GET /api/v1/fridge/my-fridge` (Lấy toàn bộ đồ đang có trong tủ lạnh của user).
+  - `POST /api/v1/fridge/items` (Thêm nguyên liệu vào tủ lạnh).
+  - `PUT /api/v1/fridge/items/:id` (Cập nhật số lượng, đơn vị, hạn dùng).
+  - `DELETE /api/v1/fridge/items/:id` (Xóa nguyên liệu khỏi tủ).
+  - `DELETE /api/v1/fridge/clear` (Làm trống tủ lạnh).
+- 🟢 **Recipe Module (`src/routes/recipe.routes.ts`)**:
+  - `GET /api/v1/recipes` (Danh sách món ăn: search, phân trang, lọc danh mục, độ khó, calo).
+  - `GET /api/v1/recipes/:id` (Chi tiết món ăn: nguyên liệu, các bước nấu, calo, thời gian).
+  - `POST /api/v1/recipes/:id/favorite` (Thêm hoặc hủy yêu thích món ăn).
+  - `GET /api/v1/recipes/fridge-match` (Thuật toán đối soát nguyên liệu tủ lạnh gợi ý món nấu được ngay).
+  - `POST/PUT/DELETE /api/v1/recipes` (CRUD món ăn dành cho Admin).
+- 🟢 **Cooking History Module (`src/routes/cookingHistory.routes.ts`)**:
+  - `POST /api/v1/cooking-history/complete` (Ghi nhận nấu xong món, tự động cộng +50 XP và nâng cấp bậc người dùng).
+  - `GET /api/v1/cooking-history/my-history` (Xem lịch sử các món đã từng nấu).
+- 🟢 **Admin Module (`src/routes/admin.routes.ts`)**:
+  - `GET /api/v1/admin/dashboard` (Thống kê tổng quan KPIs, biểu đồ tăng trưởng 7 ngày, top món ăn).
+  - `GET /api/v1/admin/users` (Danh sách người dùng hệ thống kèm phân trang, tìm kiếm).
+  - `PATCH /api/v1/admin/users/:userId/status` (Khóa hoặc kích hoạt lại tài khoản).
+  - `PATCH /api/v1/admin/users/:userId/role` (Phân quyền Admin / User).
+- 🟢 **Cloudinary Media Upload (`src/middlewares/recipeUpload.ts`, `src/middlewares/upload.ts`)**:
+  - Hỗ trợ Multer memory stream upload ảnh trực tiếp lên Cloudinary CDN an toàn.
+- 🟢 **Swagger UI & Seed Script**:
+  - Đã có tài liệu API Swagger đầy đủ tại `/api-docs`.
+  - Đã có sẵn 2 scripts nạp dữ liệu: `seedIngredients.ts` và `seedRecipes.ts`.
+
+#### B. Phía Frontend Web (`smartcook-web`) - UI ĐÃ CODE HOÀN THIỆN 100% (78 Components / 17 Pages):
+- 🟢 **Giao diện Khung & Điều hướng (Layouts & Navigation)**:
+  - `UserHeader` (Navigation bar chuẩn UX, Avatar, XP Badge, Menu dropdown, Search bar, giỏ hàng).
+  - `AdminLayout` & `AdminSidebar` (Thanh điều hướng Sidebar chuyên nghiệp với đầy đủ 7 phân hệ quản trị).
+  - `AuthLayout` (Giao diện xác thực tối giản, hình ảnh minh họa ấm cúng).
+  - `GroceryCartDrawer` (Drawer giỏ đi chợ thông minh, phân nhóm nguyên liệu, tính toán tiền).
+  - `NearbySupermarketsModal` (Modal tìm siêu thị với bộ lọc bán kính, danh sách siêu thị, link chỉ đường).
+- 🟢 **Toàn bộ Màn hình Phân hệ Người Dùng (User Portal - 7 Pages)**:
+  - `LoginPage` & `RegisterPage` (Form đăng nhập, đăng ký, validate, nút Google 1-chạm).
+  - `UserLandingPage` (Trang chủ người dùng: Hero banner, món gợi ý, mẹo nấu, carousel).
+  - `MyKitchenPage` ("Bếp Của Tôi": Quản lý tủ lạnh, thêm xóa đồ, gợi ý món nấu được ngay theo % trùng khớp).
+  - `RecipeListPage` (Danh sách công thức, thanh tìm kiếm thông minh, bộ lọc đa tiêu chí, pagination).
+  - `RecipeDetailPage` (Chi tiết món ăn, hình ảnh, calo, checklist nguyên liệu, bộ hẹn giờ nấu ăn Cooking Timer).
+  - `CommunityPage` (Mạng xã hội ẩm thực: Khung đăng bài, upload ảnh, newfeed bài viết, popover 6 cảm xúc, bình luận).
+  - `AIScanPage` (Giao diện quét ảnh tủ lạnh/bàn bếp, kéo thả ảnh, hiển thị bounding boxes nhãn nguyên liệu).
+  - `ProfilePage` (Hồ sơ người dùng, thẻ cấp bậc đầu bếp, lịch sử nấu ăn, form khảo sát khẩu vị).
+- 🟢 **Toàn bộ Màn hình Phân hệ Quản Trị (Admin Suite - 7 Pages)**:
+  - `DashboardPage` (Bảng điều khiển KPIs, biểu đồ doanh số/tăng trưởng Recharts, top công thức).
+  - `DishManagementPage` (Quản lý món ăn, modal thêm/sửa món kèm upload ảnh, quản lý kho nguyên liệu).
+  - `UserManagementPage` (Quản lý danh sách thành viên, lọc theo vai trò, modal phân quyền và khóa/mở tài khoản).
+  - `CommunityModerationPage` (Kiểm duyệt bài viết cộng đồng: Xem báo cáo, ghim bài nổi bật, ẩn/xóa bài vi phạm).
+  - `AIEnginePage` (Bảng điều khiển mô hình AI: Cấu hình system prompt, temperature, khung chat thử nghiệm live).
+  - `MarketingPage` (Quản lý chiến dịch thông báo đẩy Push Notifications, hẹn giờ gửi thông báo).
+  - `SystemSettingsPage` (Cấu hình hệ thống, bảo trì, phân quyền nâng cao).
+- 🟢 **Hạ Tầng Code Base & State Management**:
+  - Đã cấu hình Axios Interceptor (`src/api/client.ts`) tự động đính kèm `Bearer Token` và tự động gọi refresh token khi gặp mã lỗi 401.
+  - Đã có Zustand stores quản trị state UI mượt mà: `useAuthStore.ts`, `useCartStore.ts`, `useAdminStore.ts`.
+  - Dự án build thành công 100% không có lỗi TypeScript (`npm run build` pass).
 
 ---
 
-### Giai đoạn 3: Phân Vùng Quản Trị Hệ Thống & Upload Media (Admin Portal & Media Service) [ĐÃ HOÀN THÀNH 100%]
-- [x] **3.1. Middleware Upload Media Đa Năng (Multer + Cloudinary Stream Upload)**:
-  - [x] Cấu hình `src/middlewares/upload.ts`: Multer memory storage, kiểm tra mimetype ảnh hợp lệ (jpg, png, webp), giới hạn 5MB/ảnh.
-  - [x] Xây dựng tiện ích upload stream trực tiếp lên Cloudinary với folder linh hoạt (`smartcook/recipes`, `smartcook/community`, `smartcook/avatars`).
-- [x] **3.2. Module Quản Trị Backend (`src/routes/admin.route.ts`, `src/controllers/admin.controller.ts`, `src/services/admin.service.ts`)**:
-  - [x] Endpoint `GET /admin/dashboard`: Tổng hợp dữ liệu thống kê qua MongoDB Aggregation:
-    - Thẻ KPI: Tổng người dùng (`users`), Tổng công thức (`recipes`), Tổng bài viết (`posts`), Lượt quét AI (`scan_histories`).
-    - Biểu đồ tăng trưởng người dùng 7 ngày qua (phục vụ LineChart trên Web Admin).
-    - Top 10 món ăn được nấu nhiều nhất và đánh giá cao nhất (phục vụ BarChart).
-  - [x] Endpoint `GET /admin/users`: Lấy danh sách thành viên hỗ trợ phân trang (`page`, `limit`), tìm kiếm theo từ khóa họ tên / email, lọc theo `role` (user/admin) và `isActive`.
-  - [x] Endpoint `PATCH /admin/users/:userId/status`: Khóa hoặc kích hoạt lại tài khoản người dùng (`isActive: boolean`).
-  - [x] Endpoint `PATCH /admin/users/:userId/role`: Phân quyền quản trị viên (`admin`) hoặc điều chỉnh về người dùng thường (`user`).
-  - [x] Bảo mật: Gắn middleware `authenticate` và `authorize('admin')` nghiêm ngặt cho toàn bộ router `/api/v1/admin`.
-  - [x] Swagger Docs: `src/docs/admin.swagger.ts`.
-- [x] **3.3. Chuẩn Hóa Mongoose Virtuals & DTO Adapter Cho Recipe (`src/models/Recipe.ts`)**:
-  - [x] Cấu hình Virtual Getters trong Schema `Recipe.ts` để đồng bộ 100% giữa Mobile App và Web Admin:
-    - Virtual `cookingTimeMinutes` ➔ ánh xạ về `minutes`.
-    - Virtual `ratingAverage` ➔ ánh xạ về `rating`.
-    - Virtual `ratingsCount` ➔ ánh xạ về `reviewCount`.
-    - Virtual `category` ➔ ánh xạ về `categoryCode` (hoặc tên category hiển thị).
-  - [x] Bật `{ virtuals: true, getters: true }` cho cả `toJSON` và `toObject`.
-- [x] **3.4. Hoàn Thiện CRUD Công Thức Dành Cho Admin Kèm Upload Ảnh**:
-  - [x] Nâng cấp Controller/Service của `POST /recipes` và `PUT /recipes/:id` để nhận file ảnh từ multipart/form-data, upload Cloudinary và lưu link `image` vào MongoDB.
+### 6.2. Kế Hoạch Triển Khai 5 Giai Đoạn Tuần Tự (Detailed Action Plan)
 
 ---
 
-### Giai đoạn 4: Tính Năng Cộng Đồng & Chat Realtime Bằng Socket.io (Community & Realtime Gateway)
-- [ ] **4.1. Module Cộng Đồng (Community Posts & Comments `/api/v1/posts`)**:
-  - [ ] Model `Post.ts` & `Comment.ts` kèm đầy đủ Mongoose Schemas, validation (Joi) và TypeScript Interfaces.
-  - [ ] Repositories `post.repository.ts`, `comment.repository.ts`.
-  - [ ] Services `post.service.ts`, `comment.service.ts`.
-  - [ ] Controllers & Routes:
-    - [ ] `POST /posts`: Đăng bài chia sẻ kèm upload ảnh món ăn qua Cloudinary (Multipart/form-data).
-    - [ ] `GET /posts`: Lấy Newfeed cộng đồng (phân trang page/limit, sort theo mới nhất hoặc nổi bật).
-    - [ ] `GET /posts/:id`: Lấy chi tiết bài đăng và danh sách comment liên quan.
-    - [ ] `POST /posts/:id/react`: Thả cảm xúc đa dạng (`like`, `love`, `haha`, `wow`, `sad`, `angry`). Xử lý đổi cảm xúc hoặc gỡ bỏ khi bấm lại cùng loại.
-    - [ ] `GET /posts/:id/reactions`: Lấy danh sách thành viên đã thả cảm xúc (hỗ trợ lọc theo từng loại cảm xúc).
-    - [ ] `POST /posts/:id/share`: Chia sẻ bài viết (tạo bài viết trích dẫn, tăng `sharesCount` của bài gốc).
-    - [ ] `POST /posts/:id/comments`: Thêm bình luận hoặc trả lời bình luận lồng nhau (`parentComment`).
-    - [ ] `GET /posts/:id/comments`: Lấy danh sách bình luận theo bài viết có phân trang.
-    - [ ] `POST /posts/:id/comments/:commentId/react`: Thả cảm xúc cho bình luận.
-    - [ ] `DELETE /posts/:id`: Xoá bài đăng (kiểm tra quyền tác giả hoặc admin).
-  - [ ] Swagger Docs: `src/docs/community.swagger.ts`.
-- [ ] **4.2. Module Chat Realtime (Socket.io Gateway & Chat API)**:
-  - [ ] Cài đặt gói phụ thuộc: `socket.io` và `@types/socket.io`.
-  - [ ] Cấu hình `src/server.ts` tích hợp `http.createServer(app)` gắn `new Server(httpServer, { cors: ... })`.
-  - [ ] Xây dựng Socket Authentication Middleware (`src/socket/socketAuth.ts`): Trích xuất và giải mã JWT token từ `socket.handshake.auth.token`, gắn `socket.data.user`.
-  - [ ] Model `Conversation.ts` & `Message.ts` với đầy đủ indexes tối ưu query.
-  - [ ] Repository `chat.repository.ts` & Service `chat.service.ts`.
-  - [ ] Xử lý Socket Events (`src/socket/chat.handler.ts`):
-    - [ ] `join_conversation`: Client gia nhập room chat `chat:<conversationId>`.
-    - [ ] `leave_conversation`: Rời room chat.
-    - [ ] `send_message`: Lưu tin nhắn vào MongoDB, cập nhật `lastMessage` của cuộc trò chuyện, phát tán sự kiện `receive_message` tới các thành viên trong room.
-    - [ ] `typing` / `stop_typing`: Thông báo trạng thái người đối diện đang soạn tin nhắn.
-    - [ ] `mark_as_read`: Đánh dấu tin nhắn đã đọc realtime.
-  - [ ] REST API cho Chat:
-    - [ ] `GET /chat/conversations`: Lấy danh sách cuộc trò chuyện của user hiện tại.
-    - [ ] `POST /chat/conversations`: Bắt đầu hoặc lấy cuộc trò chuyện 1-1 với user khác.
-    - [ ] `GET /chat/conversations/:id/messages`: Tải lịch sử tin nhắn cũ (phân trang lùi theo thời gian `cursor`).
-  - [ ] Swagger Docs: `src/docs/chat.swagger.ts`.
+#### GIAI ĐOẠN 1: KẾT NỐI TOÀN BỘ CORE API ĐÃ CÓ VÀO FRONTEND WEB (ĐẶC BIỆT LÀ AUTHENTICATION & CORE MODULES)
+> **Mục tiêu**: Đưa toàn bộ hệ thống xác thực người dùng (Đăng ký, Đăng nhập, Google OAuth, Refresh Token), các tính năng bếp cốt lõi và trang quản trị vào hoạt động thực tế với Backend MongoDB Atlas mà **KHÔNG CẦN VIẾT THÊM CODE BACKEND NÀO MỚI** (vì Backend đã hoàn thành 100% các API này).
+
+##### 1. Phía Backend (`smartcook-backend`)
+- 🟢 **`[BE ĐÃ IMPLEMENT - CÓ SẴN 100% API AUTH & CORE]`**:
+  - **Auth Module (`src/routes/auth.routes.ts`)**:
+    - `POST /api/v1/auth/register` (Tạo tài khoản, validate dữ liệu, hash bcrypt mật khẩu, chống trùng email).
+    - `POST /api/v1/auth/login` (Xác thực email/mật khẩu, kiểm tra tài khoản có bị khóa không, trả về `user` + cặp token `accessToken` và `refreshToken`).
+    - `POST /api/v1/auth/google` (Nhận `idToken` từ Google Identity Services, verify qua Google OAuth2 client, tự động tạo mới tài khoản nếu chưa có hoặc đăng nhập trả về cặp token).
+    - `POST /api/v1/auth/refresh-token` (Cấp mới `accessToken` ngầm khi token cũ hết hạn mà không làm gián đoạn người dùng).
+    - `POST /api/v1/auth/logout` (Thu hồi phiên đăng nhập, xóa refresh token ở backend).
+    - `GET /api/v1/auth/me` (Lấy thông tin profile, avatar, điểm kinh nghiệm XP, cấp bậc đầu bếp).
+    - `POST /api/v1/auth/survey` (Lưu thông tin khảo sát khẩu vị, dị ứng, mục tiêu dinh dưỡng).
+  - **Core Modules khác**: `category`, `ingredient`, `fridge`, `recipe`, `cookingHistory`, `admin`.
+- **Việc cần làm phía Backend**:
+  - [ ] Khởi động server backend: Chạy lệnh `npm run dev` (chạy trên cổng `http://localhost:5000/api/v1`).
+  - [ ] Nạp dữ liệu mẫu ban đầu: Chạy script `npx ts-node src/scripts/seedIngredients.ts` và `npx ts-node src/scripts/seedRecipes.ts` (nếu MongoDB Atlas chưa có dữ liệu).
+
+##### 2. Phía Frontend Web (`smartcook-web`)
+- 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API & TÍCH HỢP AUTH]`**:
+
+  - [x] **Bước 1.1: Kế Hoạch Triển Khai Toàn Diện Module Xác Thực (Authentication, JWT Tokens & Google Login)**:
+    - [x] **1.1.1. Hoàn thiện API Client `src/api/auth.api.ts`**:
+      - Chuyển đổi toàn bộ các hàm gọi API sang Backend thật qua `apiClient`:
+        - `authApi.login({ email, password })`: Gửi payload tới `POST /auth/login`, nhận về `{ user, accessToken, refreshToken }`.
+        - `authApi.register({ firstName, lastName, email, password })`: Gửi payload tới `POST /auth/register`.
+        - `authApi.googleLogin(idToken)`: Gửi `idToken` tới `POST /auth/google`.
+        - `authApi.refreshToken(refreshToken)`: Gửi payload tới `POST /auth/refresh-token`.
+        - `authApi.getMe()`: Gọi `GET /auth/me` để đồng bộ thông tin user mới nhất.
+        - `authApi.logout()`: Gọi `POST /auth/logout` thông báo cho server, đồng thời xóa sạch token ở client.
+        - `authApi.updateSurvey(preferences)`: Gửi thông tin khẩu vị lên `POST /auth/survey`.
+    - [x] **1.1.2. Tích hợp Đăng Nhập Google 1-Chạm (Google OAuth 2.0 / Google Identity Services)**:
+      - Cài đặt thư viện `@react-oauth/google` hoặc nhúng script Google Identity Services (`https://accounts.google.com/gsi/client`).
+      - Cấu hình biến môi trường `VITE_GOOGLE_CLIENT_ID` trong file `.env`.
+      - Gắn component đăng nhập Google vào `LoginPage.tsx` và `RegisterPage.tsx`.
+      - Xử lý callback khi người dùng xác thực Google thành công -> lấy `credential` (idToken) -> gọi `authApi.googleLogin(credential)` -> lưu thông tin User và cặp Token vào `useAuthStore` -> chuyển hướng trang tương ứng.
+    - [x] **1.1.3. Nối API Thật & Xử Lý Giao Diện Form tại `LoginPage` & `RegisterPage`**:
+      - Gỡ bỏ hoàn toàn logic mock và tài khoản shortcut hardcoded trong `LoginPage.tsx` (như `admin@gmail.com` hay `user@smartcook.vn`).
+      - Xử lý submit form gọi `authApi.login` và `authApi.register` thật từ server.
+      - Hiển thị thông báo lỗi chi tiết khi xác thực thất bại: Email không tồn tại, Sai mật khẩu, Tài khoản bị vô hiệu hóa (`isActive === false`), Email đã được đăng ký trước đó.
+      - Bổ sung hiệu ứng Loading spinner trên nút "Đăng Nhập" / "Đăng Ký" và vô hiệu hóa button trong khi request đang xử lý.
+      - Lưu User info, `accessToken` và `refreshToken` vào `useAuthStore` (đồng bộ tự động với `localStorage`).
+    - [x] **1.1.4. Quản Lý Token & Cơ Chế Silent Refresh (Axios Interceptors)**:
+      - Trong `src/api/client.ts`: Đảm bảo Request Interceptor tự động đính kèm `Authorization: Bearer <accessToken>` vào header của mọi request gọi API.
+      - Cấu hình Response Interceptor bắt mã lỗi `401 Unauthorized`:
+        - Khi Access Token hết hạn, hệ thống tự động tạm giữ các request bị lỗi vào hàng đợi.
+        - Tự động lấy `refreshToken` từ `useAuthStore` gọi `POST /api/v1/auth/refresh-token` để cấp mới `accessToken`.
+        - Lưu `accessToken` mới vào store và tự động Retry lại các request bị lỗi ban đầu (người dùng hoàn toàn không cảm nhận thấy sự gián đoạn).
+        - Nếu Refresh Token cũng hết hạn hoặc không hợp lệ: Tự động xóa phiên đăng nhập (`authStore.logout()`), hiển thị thông báo "Phiên đăng nhập đã hết hạn" và chuyển hướng về `/login`.
+    - [x] **1.1.5. Điều Hướng & Bảo Vệ Tuyến Đường (Route Guards & Redirection)**:
+      - Điều hướng thông minh sau đăng nhập:
+        - Nếu `user.role === 'admin'`: Tự động chuyển hướng vào `/admin/dashboard`.
+        - Nếu `user.role === 'user'`: Tự động chuyển hướng về `/` (Landing Page) hoặc trang mà người dùng đang cố truy cập trước đó (`redirectUrl`).
+      - Củng cố Route Guards trong `src/routes/AppRoutes.tsx`:
+        - `ProtectedUserRoute`: Kiểm tra trạng thái đăng nhập, nếu chưa có token thì chuyển hướng về `/login`.
+        - `AdminGuard`: Kiểm tra nghiêm ngặt `user.role === 'admin'`, nếu là user thường sẽ bị chặn và chuyển hướng về trang 403 / trang chủ.
+
+  - [x] **Bước 1.2: Tạo & Chuẩn hóa các file API Client Services Khác (`src/api/*`)**:
+    - [x] Tạo `src/api/fridge.api.ts`: Viết các hàm gọi `GET /fridge/my-fridge`, `POST /fridge/items`, `PUT /fridge/items/:id`, `DELETE /fridge/items/:id`, `DELETE /fridge/clear`.
+    - [x] Tạo `src/api/ingredient.api.ts`: Viết các hàm gọi `GET /categories`, `GET /ingredients` (kèm tìm kiếm từ khóa và lọc nhóm).
+    - [x] Hoàn thiện `src/api/recipe.api.ts`: Viết các hàm gọi `getRecipes`, `getRecipeById`, `toggleFavorite`, `getFridgeMatch`, `createRecipe` (gửi FormData kèm file ảnh Cloudinary), `updateRecipe`, `deleteRecipe`.
+    - [x] Tạo `src/api/cookingHistory.api.ts`: Viết hàm gọi `POST /cooking-history/complete` và `GET /cooking-history/my-history`.
+    - [x] Hoàn thiện `src/api/admin.api.ts`: Viết các hàm gọi `getDashboardStats`, `getUsers`, `toggleUserStatus`, `updateUserRole`.
+
+  - [x] **Bước 1.3: Tiến hành Fetch API vào các Màn Hình Người Dùng (User Portal)**:
+    - [x] `UserHeader` & `ProfilePage`: Lấy thông tin user hiện tại từ `GET /auth/me`; hiển thị cấp bậc, avatar và điểm XP thật; gọi `POST /auth/survey` khi cập nhật khẩu vị.
+    - [x] `MyKitchenPage` ("Bếp Của Tôi"): Gọi `GET /fridge/my-fridge` đổ dữ liệu thật vào danh sách nguyên liệu; thêm/xóa nguyên liệu gọi trực tiếp API tủ lạnh; gọi `GET /recipes/fridge-match` hiển thị danh sách món ăn gợi ý khớp từ tủ lạnh.
+    - [x] `RecipeListPage` & `RecipeDetailPage`: Tải danh sách công thức thật từ `GET /recipes`; bấm nút Yêu thích gọi `POST /recipes/:id/favorite`; khi bộ đếm Cooking Timer hoàn tất, gọi `POST /cooking-history/complete` để nhận +50 XP thật.
+
+  - [x] **Bước 1.4: Tiến hành Fetch API vào các Màn Hình Quản Trị (Admin Suite)**:
+    - [x] `DashboardPage`: Lấy số liệu KPIs, biểu đồ tăng trưởng 7 ngày và top món ăn từ `GET /admin/dashboard`.
+    - [x] `DishManagementPage`: Thực thi thêm/sửa/xóa món ăn thật kèm upload file ảnh Cloudinary (`POST/PUT/DELETE /recipes`); Tab Kho nguyên liệu kết nối dữ liệu thật từ `GET /ingredients` và `GET /categories`.
+    - [x] `UserManagementPage`: Tải danh sách người dùng thật từ `GET /admin/users`; thực hiện khóa/mở tài khoản qua `PATCH /admin/users/:userId/status`.
+
 
 ---
 
-### Giai đoạn 5: Tích Hợp AI Engine & GeoSpatial Siêu Thị
-- [ ] Xây dựng Service tích hợp Gemini AI SDK (Model `gemini-3.6-flash`).
-- [ ] Endpoint `/api/v1/ai/scan`: Tiếp nhận ảnh -> Upload Cloudinary -> Gemini Vision -> Trả về danh sách nguyên liệu, toạ độ pins, món ăn đề xuất -> Lưu `scan_histories`.
-- [ ] Endpoint `/api/v1/ai/generate-recipe`: Sinh công thức sáng tạo từ nguyên liệu tủ lạnh đã chọn kết hợp khẩu vị survey.
-- [ ] Cấu hình chỉ mục `2dsphere` cho `stores`. Viết Endpoint `/api/v1/stores/nearby` nhận toạ độ `latitude, longitude` từ Mobile và trả về siêu thị gần nhất kèm khoảng cách km.
+#### GIAI ĐOẠN 2: MODULE MẠNG XÃ HỘI CỘNG ĐỒNG (COMMUNITY NEWFEED, REACTIONS & COMMENTS)
+> **Mục tiêu**: Xây dựng backend cho mạng xã hội ẩm thực và kết nối vào màn hình `CommunityPage` cùng trang kiểm duyệt `CommunityModerationPage`.
+
+##### 1. Phía Backend (`smartcook-backend`)
+- 🟡 **`[BE CẦN BỔ SUNG MỚI]`**:
+  - [ ] Tạo Model `src/models/Post.ts`: Lưu trữ `authorId`, `caption`, mảng ảnh `images` (Cloudinary URL), `recipeId`, `tags`, `reactionCounts` (like, love, haha, wow, sad, angry), `totalReactions`, `commentsCount`, `status` (`published`, `pinned`, `hidden`).
+  - [ ] Tạo Model `src/models/Comment.ts`: Lưu trữ `postId`, `authorId`, `content`, `parentCommentId` (hỗ trợ trả lời bình luận nhiều cấp).
+  - [ ] Tạo Model `src/models/Reaction.ts`: Quản lý lượt thả cảm xúc duy nhất của từng user theo từng bài viết.
+  - [ ] Xây dựng tầng Logic: `post.repository.ts`, `comment.repository.ts`, `post.service.ts`, `comment.service.ts`.
+  - [ ] Xây dựng Endpoints Route `/api/v1/posts`:
+    - `GET /api/v1/posts`: Lấy danh sách bài viết Newfeed có phân trang.
+    - `POST /api/v1/posts`: Tạo bài viết mới kèm upload ảnh Cloudinary (multipart/form-data).
+    - `GET /api/v1/posts/:id`: Lấy chi tiết bài viết và danh sách bình luận kèm theo.
+    - `POST /api/v1/posts/:id/react`: Thả hoặc gỡ cảm xúc (like, love, haha, wow, sad, angry).
+    - `POST /api/v1/posts/:id/comments`: Thêm bình luận mới hoặc trả lời bình luận.
+    - `DELETE /api/v1/posts/:id`: Xóa bài viết của tác giả.
+    - `PATCH /api/v1/admin/community/posts/:id/pin`: Ghim bài nổi bật lên đầu trang (Quyền Admin).
+    - `PATCH /api/v1/admin/community/posts/:id/status`: Ẩn/Hiện bài viết, đánh dấu vi phạm (Quyền Admin).
+  - [ ] Bổ sung Swagger tài liệu API: `src/docs/community.swagger.ts`.
+
+##### 2. Phía Frontend Web (`smartcook-web`)
+- 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**:
+  - [ ] Tạo file `src/api/community.api.ts`: Viết các hàm gọi Newfeed, tạo bài viết, thả cảm xúc, gửi bình luận, ghim bài.
+  - [ ] Nối dữ liệu vào màn hình `CommunityPage`:
+    - Tải Newfeed bài đăng thật từ Backend MongoDB.
+    - Form tạo bài viết: Đính kèm ảnh thực tế tải lên Cloudinary thông qua Backend.
+    - Tương tác cảm xúc: Bấm chọn 1 trong 6 cảm xúc -> cập nhật số lượng realtime.
+    - Gửi bình luận: Hiển thị ngay bình luận mới vào danh sách.
+  - [ ] Nối dữ liệu vào màn hình `CommunityModerationPage`:
+    - Hiển thị danh sách các bài viết trên hệ thống.
+    - Thực hiện hành động ghim bài viết nổi bật, ẩn bài vi phạm hoặc xóa bài viết.
 
 ---
 
-### Giai đoạn 6: Kế Hoạch Bữa Ăn, Giỏ Hàng & Gamification Nấu Ăn
-- [ ] Hoàn thiện API `meal_plans` (lịch ăn tuần 7 ngày) và `cart_items` (danh sách đi chợ).
-- [ ] Hoàn thiện API `cooking_histories` (ghi nhận thời gian nấu, cộng 50 XP cho người dùng, lưu ảnh thành phẩm).
-- [ ] Hoàn thiện API `reviews` (bình luận, đánh giá sao).
+#### GIAI ĐOẠN 3: MODULE CHUỖI SIÊU THỊ GPS & GIỎ ĐI CHỢ THÔNG MINH
+> **Mục tiêu**: Kích hoạt tính năng tìm kiếm siêu thị theo tọa độ GPS thực tế của trình duyệt trên `NearbySupermarketsModal` và đồng bộ danh sách cần mua từ `GroceryCartDrawer`.
+
+##### 1. Phía Backend (`smartcook-backend`)
+- 🟡 **`[BE CẦN BỔ SUNG MỚI]`**:
+  - [ ] Tạo Model `src/models/Store.ts`:
+    - `name` (Tên siêu thị: WinMart, Co.opmart, Bách Hóa Xanh, Lotte Mart, AEON Mall,...).
+    - `brand` (Nhãn hàng), `address` (Địa chỉ chi tiết), `phone`, `openingHours`.
+    - Tọa độ địa lý GeoJSON: `location: { type: { type: String, default: "Point" }, coordinates: [longitude, latitude] }`.
+    - Đánh chỉ mục địa lý 2D: `StoreSchema.index({ location: "2dsphere" })`.
+  - [ ] Nạp dữ liệu siêu thị mẫu (`seedStores.ts`): Tạo 30+ địa điểm siêu thị lớn tại các quận trung tâm.
+  - [ ] Xây dựng Endpoints Route `/api/v1/stores`:
+    - `GET /api/v1/stores/nearby?lat=...&lng=...&radius=5000`: Sử dụng toán tử `$geoNear` của MongoDB để tính khoảng cách chính xác theo mét/km và sắp xếp từ gần đến xa.
+    - `POST/PUT/DELETE /api/v1/stores`: Quản lý danh sách chi nhánh siêu thị (Quyền Admin).
+  - [ ] Bổ sung Swagger tài liệu API: `src/docs/store.swagger.ts`.
+
+##### 2. Phía Frontend Web (`smartcook-web`)
+- 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**:
+  - [ ] Tạo file `src/api/store.api.ts`: Viết hàm `getNearbyStores(lat, lng, radius)`.
+  - [ ] Nối dữ liệu vào modal `NearbySupermarketsModal`:
+    - Sử dụng `navigator.geolocation.getCurrentPosition` lấy tọa độ thực tế của người dùng từ trình duyệt web.
+    - Gọi API `/stores/nearby` hiển thị danh sách các siêu thị gần nhất kèm số km chính xác.
+    - Nút "Chỉ đường": Mở Google Maps điều hướng đến siêu thị đã chọn kèm theo danh sách các nguyên liệu đang có trong `useCartStore`.
 
 ---
 
-### Giai đoạn 7: Tích Hợp & Vận Hành Website Đa Năng (`smartcook-web` - Hybrid All-in-One)
-- [x] **7.1. Khởi Tạo Cấu Trúc Dự Án & Xây Dựng Khung Giao Diện [ĐÃ HOÀN THÀNH 100% TRÊN CODE]**:
-  - [x] Đã tạo dự án `smartcook-web` bằng Vite + React 19 + TypeScript + Tailwind CSS.
-  - [x] Cấu hình Axios Client (`src/api/client.ts`) với Interceptors tự động đính kèm `Bearer Token` và xử lý **Silent Refresh Token** khi gặp mã 401.
-  - [x] Đã cài đặt các thư viện: `@tanstack/react-query`, `zustand`, `lucide-react`, `framer-motion`, `recharts`, `@react-oauth/google`, `react-router-dom`.
-  - [x] Đã xây dựng `useAuthStore` (Zustand): lưu `user`, `accessToken`, `role`, đồng bộ `localStorage`.
-  - [x] Đã hoàn thiện giao diện Đăng nhập (`/auth/login`) và Đăng ký (`/auth/register`) với hiệu ứng Glassmorphism.
-  - [x] Đã thiết lập Route Guards: `AuthGuard`, `AdminGuard`.
-  - [x] Đã code hoàn chỉnh các trang Public: `LandingPage`, `RecipeListPage`, `RecipeDetailPage`, `CommunityPage`, `ProfilePage`.
-  - [x] Đã code hoàn chỉnh các trang Admin: `DashboardPage` (KPI cards, biểu đồ Recharts), `RecipeManagementPage` (Bảng quản lý công thức).
-  - [x] Đã kiểm thử lệnh `npm run build` của `smartcook-web` đạt kết quả thành công 100% không lỗi biên dịch.
-- [ ] **7.2. Tích Hợp API Thật & Xóa Bỏ Dữ Liệu Giả Lập (Mock Fallback)**:
-  - [ ] Nối API thật cho Admin Dashboard (`GET /api/v1/admin/dashboard`): Hiển thị dữ liệu thực tế từ MongoDB Atlas thay vì số liệu tĩnh.
-  - [ ] Nối API thật cho Quản lý Thành viên (`GET /api/v1/admin/users`, `PATCH /api/v1/admin/users/:userId/status`): Danh sách user và tính năng khóa/mở tài khoản.
-  - [ ] Nối API thật cho Quản lý Công thức (`POST/PUT/DELETE /api/v1/recipes`): Form tạo mới công thức kèm upload ảnh thật lên Cloudinary.
-  - [ ] Nối API thật cho Mạng xã hội Ẩm thực (`GET/POST /api/v1/posts`, thả cảm xúc, bình luận).
-  - [ ] Kiểm thử toàn diện tương thích hai chiều giữa `smartcook-web` và `smartcook-backend`.
+#### GIAI ĐOẠN 4: MODULE TRÍ TUỆ NHÂN TẠO AI (GEMINI VISION SCANNER & PLAYGROUND CHAT)
+> **Mục tiêu**: Kích hoạt tính năng quét ảnh bàn bếp/tủ lạnh nhận diện nguyên liệu trên `AIScanPage` và live playground chat trên `AIEnginePage`.
+
+##### 1. Phía Backend (`smartcook-backend`)
+- 🟡 **`[BE CẦN BỔ SUNG MỚI]`**:
+  - [ ] Cấu hình Google Gemini AI SDK (`@google/genai` hoặc `@google/generative-ai`) sử dụng `GEMINI_API_KEY`.
+  - [ ] Tạo Model `src/models/ScanHistory.ts`: Lưu trữ ảnh chụp tủ lạnh, nhãn nguyên liệu nhận diện được, độ tin cậy và món ăn đề xuất.
+  - [ ] Xây dựng Endpoints Route `/api/v1/ai`:
+    - `POST /api/v1/ai/scan`: Nhận file ảnh tải lên -> Upload Cloudinary -> Gửi ảnh sang Gemini 1.5/2.0 Flash Vision bóc tách danh sách nguyên liệu -> Đối soát với database nguyên liệu gợi ý món -> Lưu lịch sử quét.
+    - `POST /api/v1/ai/chat`: Chat hỏi đáp ẩm thực trực tiếp với Trợ lý Bếp Trưởng SmartCook AI.
+    - `GET /api/v1/admin/ai/config` & `PUT /api/v1/admin/ai/config`: Xem và tùy chỉnh System Prompt, Temperature, Model AI (Quyền Admin).
+  - [ ] Bổ sung Swagger tài liệu API: `src/docs/ai.swagger.ts`.
+
+##### 2. Phía Frontend Web (`smartcook-web`)
+- 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**:
+  - [ ] Tạo file `src/api/ai.api.ts`: Viết các hàm `scanKitchenImage(file)`, `sendAiChatMessage(prompt)`, `getAiConfig()`, `updateAiConfig(payload)`.
+  - [ ] Nối dữ liệu vào màn hình `AIScanPage`:
+    - Cho phép người dùng kéo thả hoặc chọn file ảnh chụp tủ lạnh/bàn bếp thực tế.
+    - Hiển thị danh sách nguyên liệu bóc tách được từ Gemini Vision.
+    - Nút bấm 1 chạm: "Lưu tất cả vào Tủ Lạnh của tôi" (tự động gọi `POST /fridge/items` lưu vào tủ lạnh).
+  - [ ] Nối dữ liệu vào màn hình `AIEnginePage`:
+    - Đọc và lưu cấu hình System Prompt lên Backend.
+    - Live Test Playground: Khung chat hỏi đáp ẩm thực phản hồi trực tiếp từ API Gemini thật.
 
 ---
 
-## 7. Kế Hoạch Xác Minh & Kiểm Thử (Verification Plan)
+#### GIAI ĐOẠN 5: TỐI ƯU HIỆU NĂNG BUNDLE, THÔNG BÁO TOAST, DUAL-MODE & KIỂM THỬ E2E
+> **Mục tiêu**: Tối ưu tốc độ tải trang, hoàn thiện phản hồi giao diện người dùng và kiểm thử toàn diện 2 chiều toàn hệ sinh thái.
 
-### Kiểm Thử Tự Động (Automated Testing)
-- Chạy unit tests cho các thuật toán cốt lõi:
-  - Thuật toán chuẩn hoá tiếng Việt không dấu (`normalizeText`).
-  - Thuật toán tính độ khớp nguyên liệu tủ lạnh (`matchIngredient` & `fridgeMatchPercent`).
-- Kiểm thử tích hợp Socket.io kết nối đồng thời và broadcast sự kiện qua JWT handshake.
-- Kiểm tra tính hợp lệ của GeoJSON query trên collection `stores`.
+##### 1. Phía Frontend Web (`smartcook-web`)
+- 🟣 **`[FE TỐI ƯU & HOÀN THIỆN]`**:
+  - [ ] **Code Splitting (Giảm kích thước Bundle Tải Trang)**:
+    - Áp dụng `React.lazy()` và `Suspense` cho toàn bộ các Route Admin trong `AppRoutes.tsx`.
+    - Giảm kích thước chunk tải ban đầu từ ~845kB xuống dưới 200kB, tăng tốc độ mở trang gấp 4 lần.
+  - [ ] **Hệ Thống Thông Báo Toast Trực Quan**:
+    - Tích hợp Toast hiển thị phản hồi tức thì: "Đã thêm vào tủ lạnh thành công", "Đã lưu công thức", "Đã copy danh sách đi chợ", "Đăng bài thành công", hoặc thông báo lỗi thân thiện.
+  - [ ] **Cơ Chế Vận Hành Song Hành (Dual-Mode)**:
+    - Đảm bảo khi Backend ngắt kết nối hoặc mạng gián đoạn, Web tự động fallback về Mock Store an toàn, không gây crash trang trắng.
+  - [ ] **Kiểm tra Responsive**: Kiểm tra giao diện hiển thị đồng bộ trên Desktop, Laptop, Tablet và Mobile.
 
-### Kiểm Thử Tích Hợp (API & Integration Verification)
-- Sử dụng Postman / Thunder Client để kiểm thử toàn bộ luồng:
-  1. Auth Flow: `register` -> `login` -> `onboarding-survey` -> `refresh-token`.
-  2. Fridge & Recipe Flow: thêm nguyên liệu vào `user_fridges` -> gọi API recipes kiểm tra xem `fridgeMatchPercent` có tính toán chuẩn xác không.
-  3. Community & Upload Flow: Tải ảnh món ăn -> Đăng bài chia sẻ -> Thích và Bình luận bài viết.
-  4. Realtime Chat Flow: 2 client kết nối Socket.io -> Gửi tin nhắn -> Xác nhận nhận tin tức thì và kiểm tra lịch sử chat.
-  5. AI Scan Flow: Gửi ảnh mẫu bàn bếp -> Gemini phân tích -> Kiểm tra cấu trúc JSON trả về có đủ `pins` và `suggestedRecipe`.
-  6. Nearby Stores Flow: Gửi toạ độ Quận 1 (10.7725, 106.698) -> Kiểm tra danh sách siêu thị trả về có sắp xếp đúng khoảng cách tăng dần.
+##### 2. Kiểm Thử Liên Thông Toàn Hệ Thống (End-to-End Verification - 5 Kịch Bản Trọng Yếu)
+1. **Kịch bản 1 (Đăng nhập & Hồ sơ)**:
+   - Đăng ký user mới -> Đăng nhập nhận JWT -> Khảo sát khẩu vị -> Tự động refresh token khi hết hạn -> Đăng xuất.
+2. **Kịch bản 2 (Tủ lạnh & Nấu ăn)**:
+   - Vào `MyKitchenPage` thêm đồ vào tủ lạnh -> MongoDB lưu trữ -> Nhận danh sách gợi ý món nấu được ngay -> Mở `RecipeDetailPage` -> Chạy Cooking Timer hoàn tất -> Nhận thông báo +50 XP và thăng cấp bậc đầu bếp.
+3. **Kịch bản 3 (Giỏ đi chợ & Siêu thị GPS)**:
+   - Thêm nguyên liệu thiếu vào `GroceryCartDrawer` -> Mở `NearbySupermarketsModal` -> Cho phép định vị GPS -> Hiển thị danh sách siêu thị gần nhất kèm km chính xác -> Mở Google Maps chỉ đường.
+4. **Kịch bản 4 (Cộng đồng ẩm thực)**:
+   - Đăng bài viết kèm ảnh thật lên `CommunityPage` -> Ảnh lưu trữ Cloudinary -> Bài viết xuất hiện trên Newfeed -> Thả cảm xúc và gửi bình luận thành công.
+5. **Kịch bản 5 (Quản trị Admin)**:
+   - Đăng nhập tài khoản Admin -> Vào `DashboardPage` xem số liệu thật -> Vào `DishManagementPage` thêm công thức món ăn mới -> Món ăn xuất hiện ngay trên trang người dùng -> Khóa tài khoản thử nghiệm trên `UserManagementPage` -> Tài khoản bị khóa không thể đăng nhập.
+
+
+
