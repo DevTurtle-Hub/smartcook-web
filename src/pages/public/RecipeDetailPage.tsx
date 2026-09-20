@@ -60,7 +60,8 @@ const INGREDIENT_PRICE_MAP: Record<string, number> = {
   'hành lá & mùi': 4000,
 };
 
-const getIngredientEstimatedPrice = (name: string): number => {
+const getIngredientEstimatedPrice = (name?: string): number => {
+  if (!name) return 12000;
   const normalized = name.toLowerCase().trim();
   for (const [key, val] of Object.entries(INGREDIENT_PRICE_MAP)) {
     if (normalized.includes(key) || key.includes(normalized)) {
@@ -169,17 +170,53 @@ export const RecipeDetailPage: React.FC = () => {
     quickNote: 'Nhanh gọn',
   };
 
-  const recipe: ExtendedRecipe = (recipeData as ExtendedRecipe) || fallbackMatch || defaultRecipe;
+  const rawRecipe = (recipeData as any) || fallbackMatch || defaultRecipe;
 
-  const displayIngredients = recipe.ingredients.map((ing) => ({
-    name: ing.name,
-    amount: ing.amount,
-    unit: ing.unit,
-    price: getIngredientEstimatedPrice(ing.name),
-    notes: ing.notes,
+  const recipe: ExtendedRecipe = {
+    ...defaultRecipe,
+    ...rawRecipe,
+    _id: rawRecipe?._id || rawRecipe?.id || defaultRecipe._id,
+    title: rawRecipe?.title || defaultRecipe.title,
+    description: rawRecipe?.description || defaultRecipe.description,
+    image: rawRecipe?.image || defaultRecipe.image,
+    category: rawRecipe?.category || rawRecipe?.categoryCode || defaultRecipe.category,
+    cookingTimeMinutes: rawRecipe?.cookingTimeMinutes || rawRecipe?.minutes || defaultRecipe.cookingTimeMinutes,
+    difficulty: rawRecipe?.difficulty || defaultRecipe.difficulty,
+    servingsCount: rawRecipe?.servingsCount || (typeof rawRecipe?.servings === 'number' ? rawRecipe.servings : parseInt(rawRecipe?.servings) || defaultRecipe.servingsCount),
+    ratingAverage: rawRecipe?.ratingAverage || rawRecipe?.rating || defaultRecipe.ratingAverage,
+    ratingsCount: rawRecipe?.ratingsCount || rawRecipe?.reviewCount || defaultRecipe.ratingsCount,
+    nutrition: {
+      calories: rawRecipe?.nutrition?.calories ?? defaultRecipe.nutrition.calories,
+      proteinGrams: rawRecipe?.nutrition?.proteinGrams ?? (parseInt(rawRecipe?.nutrition?.protein) || defaultRecipe.nutrition.proteinGrams),
+      carbsGrams: rawRecipe?.nutrition?.carbsGrams ?? (parseInt(rawRecipe?.nutrition?.carbs) || defaultRecipe.nutrition.carbsGrams),
+      fatGrams: rawRecipe?.nutrition?.fatGrams ?? (parseInt(rawRecipe?.nutrition?.fat) || defaultRecipe.nutrition.fatGrams),
+    },
+    ingredients: Array.isArray(rawRecipe?.ingredients) && rawRecipe.ingredients.length > 0
+      ? rawRecipe.ingredients
+      : defaultRecipe.ingredients,
+    steps: Array.isArray(rawRecipe?.steps) && rawRecipe.steps.length > 0
+      ? rawRecipe.steps
+      : defaultRecipe.steps,
+  };
+
+  const displayIngredients = (recipe.ingredients || []).map((ing: any) => {
+    const ingName = ing?.name || ing?.ingredientName || 'Nguyên liệu';
+    return {
+      name: ingName,
+      amount: ing?.amount ?? '',
+      unit: ing?.unit ?? '',
+      price: getIngredientEstimatedPrice(ingName),
+      notes: ing?.notes || '',
+    };
+  });
+
+  const displaySteps = (recipe.steps || []).map((step: any, idx: number) => ({
+    stepNumber: step?.stepNumber ?? idx + 1,
+    instruction: step?.instruction || step?.description || '',
+    title: step?.title || `Bước ${step?.stepNumber ?? idx + 1}`,
+    timerMinutes: step?.timerMinutes || 0,
+    tip: step?.tip || '',
   }));
-
-  const displaySteps = recipe.steps;
 
   // Tính tổng chi phí ban đầu và chi phí còn lại sau khi tick bỏ những thứ đã có sẵn
   const totalOriginalCost = displayIngredients.reduce((sum, ing) => sum + ing.price, 0);
