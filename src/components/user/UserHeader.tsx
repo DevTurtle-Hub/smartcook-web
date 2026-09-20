@@ -42,8 +42,8 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
   const [isReminderDismissed, setIsReminderDismissed] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const cartTotalCount = cartItems.length;
-  const totalPrice = getTotalPrice();
+  const cartTotalCount = isAuthenticated ? cartItems.length : 0;
+  const totalPrice = isAuthenticated ? getTotalPrice() : 0;
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -76,7 +76,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
       icon: Compass,
     },
     {
-      label: 'Trang Chủ',
+      label: 'Nguyên Liệu',
       path: '/recipes',
       icon: Utensils,
     },
@@ -213,7 +213,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 }`}
               >
                 <Utensils className="w-4 h-4" />
-                <span>Trang Chủ</span>
+                <span>Nguyên Liệu</span>
                 {location.pathname.startsWith('/recipes') && (
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
                 )}
@@ -452,7 +452,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                   }`}
                 >
                   <Utensils className="w-4 h-4" />
-                  <span>Trang Chủ Công Thức</span>
+                  <span>Nguyên Liệu</span>
                 </Link>
 
                 <Link

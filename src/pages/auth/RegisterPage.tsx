@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, User, AlertCircle, ArrowRight, ChefHat } from 'lucide-react';
+import { Lock, Mail, User, AlertCircle, ArrowRight, ChefHat, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -9,6 +9,9 @@ export const RegisterPage: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -72,13 +75,24 @@ export const RegisterPage: React.FC = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (password.length < 6) {
+      setError('Mật khẩu phải có tối thiểu 6 ký tự.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Mật khẩu xác nhận không trùng khớp. Vui lòng kiểm tra lại.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const data = await authApi.register({
-        firstName,
-        lastName,
-        email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
       const accessToken = data.tokens?.accessToken || data.accessToken || '';
@@ -158,19 +172,69 @@ export const RegisterPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Mật khẩu */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5">Mật khẩu</label>
           <div className="relative">
             <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border border-slate-200/90 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs"
+              className="w-full pl-11 pr-11 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border border-slate-200/90 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+              title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
+        </div>
+
+        {/* Xác nhận mật khẩu */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">Xác nhận mật khẩu</label>
+          <div className="relative">
+            <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Nhập lại mật khẩu"
+              className={`w-full pl-11 pr-11 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs ${
+                confirmPassword && password !== confirmPassword
+                  ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/30'
+                  : confirmPassword && password === confirmPassword
+                  ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/30'
+                  : 'border-slate-200/90 focus:border-orange-500 focus:ring-orange-500/30'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+              title={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-[11px] font-semibold text-rose-500 mt-1 pl-1">
+              Mật khẩu xác nhận chưa khớp
+            </p>
+          )}
+          {confirmPassword && password === confirmPassword && (
+            <p className="text-[11px] font-semibold text-emerald-600 mt-1 pl-1 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Mật khẩu xác nhận trùng khớp
+            </p>
+          )}
         </div>
 
         {/* Nút Đăng Ký bo tròn cam có mũi tên */}
