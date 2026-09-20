@@ -1,51 +1,96 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { PublicLayout } from '../layouts/PublicLayout';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { AuthLayout } from '../layouts/AuthLayout';
 
-import { LandingPage } from '../pages/public/LandingPage';
-import { RecipeListPage } from '../pages/public/RecipeListPage';
-import { RecipeDetailPage } from '../pages/public/RecipeDetailPage';
-import { CommunityPage } from '../pages/public/CommunityPage';
-import { ProfilePage } from '../pages/user/ProfilePage';
-
+// Auth Pages
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 
+// Admin Modules
 import { DashboardPage } from '../pages/admin/DashboardPage';
-import { RecipeManagementPage } from '../pages/admin/RecipeManagementPage';
+import { DishManagementPage } from '../pages/admin/DishManagementPage';
+import { CommunityModerationPage } from '../pages/admin/CommunityModerationPage';
+import { UserManagementPage } from '../pages/admin/UserManagementPage';
+import { AIEnginePage } from '../pages/admin/AIEnginePage';
+import { MarketingPage } from '../pages/admin/MarketingPage';
+import { SystemSettingsPage } from '../pages/admin/SystemSettingsPage';
+
+// User & Public Modules
+import { UserLandingPage } from '../pages/user/UserLandingPage';
+import { RecipeListPage } from '../pages/public/RecipeListPage';
+import { RecipeDetailPage } from '../pages/public/RecipeDetailPage';
+import { AIScanPage } from '../pages/user/AIScanPage';
+import { CommunityPage } from '../pages/public/CommunityPage';
+import { ProfilePage } from '../pages/user/ProfilePage';
+import { MyKitchenPage } from '../pages/user/MyKitchenPage';
+
+// Auth Guard component for User Routes
+import { useAuthStore } from '../store/useAuthStore';
+
+const ProtectedUserRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/login" replace />;
+  }
+  return <>{children}</>;
+};
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* 1. Public Zone (Khách & Người Dùng) */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/recipes" element={<RecipeListPage />} />
-        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
+      {/* 1. Trang Dành Cho User - Giới thiệu & Khám Phá Công Nghệ App SmartCook */}
+      <Route path="/" element={<UserLandingPage />} />
+      <Route path="/showcase" element={<UserLandingPage />} />
 
-      {/* 2. Authentication Zone */}
+      {/* 2. Trang Chủ (Kho Món Ăn - Recipe Cards) */}
+      <Route path="/recipes" element={<RecipeListPage />} />
+      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      <Route path="/recipe/:id" element={<RecipeDetailPage />} />
+
+      {/* 3. Trang Bếp Của Tôi (Tôi có gì trong tủ lạnh - AI Gợi ý) */}
+      <Route path="/my-kitchen" element={<MyKitchenPage />} />
+      <Route path="/kitchen" element={<MyKitchenPage />} />
+
+      {/* 4. Trang Scan Chụp/Tải Ảnh AI (Có hướng dẫn tải app mobile) */}
+      <Route path="/scan" element={<AIScanPage />} />
+
+      {/* 4. Trang Cộng Đồng (Đăng bài, chat, bình luận, thả tim) */}
+      <Route path="/community" element={<CommunityPage />} />
+
+      {/* 5. Trang Hồ Sơ Cá Nhân (Yêu cầu đăng nhập) */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedUserRoute>
+            <ProfilePage />
+          </ProtectedUserRoute>
+        }
+      />
+
+      {/* 6. Trang Đăng Nhập & Đăng Ký */}
       <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
       </Route>
 
-      {/* 3. Admin Zone (Bảo Vệ Bởi AdminGuard) */}
+      {/* 7. Toàn Bộ Hệ Thống Quản Trị Admin Portal (Bảo vệ chỉ Admin truy cập) */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="recipes" element={<RecipeManagementPage />} />
-        <Route path="ingredients" element={<RecipeManagementPage />} />
-        <Route path="stores" element={<RecipeManagementPage />} />
-        <Route path="community" element={<RecipeManagementPage />} />
-        <Route path="users" element={<RecipeManagementPage />} />
+        <Route path="dishes" element={<DishManagementPage />} />
+        <Route path="recipes" element={<Navigate to="/admin/dishes" replace />} />
+        <Route path="ingredients" element={<Navigate to="/admin/dishes" replace />} />
+        <Route path="community" element={<CommunityModerationPage />} />
+        <Route path="ai-engine" element={<AIEnginePage />} />
+        <Route path="users" element={<UserManagementPage />} />
+        <Route path="marketing" element={<MarketingPage />} />
+        <Route path="settings" element={<SystemSettingsPage />} />
       </Route>
 
-      {/* 4. Fallback 404 */}
+      {/* 8. Mặc định fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

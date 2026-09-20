@@ -30,3 +30,77 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* 3D and Animation Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.perspective-2000 {
+  perspective: 2000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(1deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(-1.5deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Seamless Image Feathering Masks (Loại bỏ hoàn toàn viền chữ nhật, tan vào phông nền) */
+.mask-feather-radial {
+  mask-image: radial-gradient(circle at center, black 65%, transparent 98%);
+  -webkit-mask-image: radial-gradient(circle at center, black 65%, transparent 98%);
+}
+
+.mask-feather-smooth {
+  mask-image: radial-gradient(ellipse 90% 92% at 50% 50%, black 60%, rgba(0, 0, 0, 0.5) 85%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 92% at 50% 50%, black 60%, rgba(0, 0, 0, 0.5) 85%, transparent 100%);
+}
+
+.mask-feather-edges {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%),
+              linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%),
+                      linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+

@@ -38,7 +38,7 @@ export interface Recipe {
   image: string;
   category: string;
   cookingTimeMinutes: number;
-  difficulty: 'Dễ' | 'Trung bình' | 'Khó';
+  difficulty: 'Dễ' | 'Trung bình' | 'Khó' | string;
   servingsCount: number;
   nutrition: {
     calories: number;
