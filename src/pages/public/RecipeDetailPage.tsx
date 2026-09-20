@@ -210,7 +210,8 @@ export const RecipeDetailPage: React.FC = () => {
   const handleCompleteCooking = async () => {
     setIsSubmittingCooking(true);
     try {
-      const res = await cookingHistoryApi.completeCookingSession(recipe._id);
+      const cookTime = recipe.cookingTimeMinutes || (recipe as any).cookTime || 20;
+      const res = await cookingHistoryApi.completeCookingSession(recipe._id, recipe.title, cookTime);
       if (res?.user) {
         updateUser({
           chefExp: res.user.chefExp,

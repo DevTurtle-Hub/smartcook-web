@@ -20,11 +20,16 @@ export interface CookingSessionResponse {
 export const cookingHistoryApi = {
   completeCookingSession: async (
     recipeId: string,
+    recipeName?: string,
+    durationMinutes?: number,
     notes?: string
   ): Promise<CookingSessionResponse> => {
     try {
       const res = await apiClient.post<ApiResponse<any>>('/cooking-history', {
         recipeId,
+        recipeName: recipeName || 'Món ngon SmartCook',
+        durationMinutes: durationMinutes || 20,
+        servings: 2,
         notes: notes || 'Hoàn thành nấu món trên SmartCook Web',
       });
       return res.data.data;
