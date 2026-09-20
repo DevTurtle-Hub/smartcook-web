@@ -183,46 +183,69 @@ export const LoginPage: React.FC = () => {
         </div>
       </form>
 
+      {/* Gợi ý tài khoản mẫu có sẵn trong Database MongoDB */}
+      <div className="bg-orange-50/70 border border-orange-200/80 rounded-xl p-3 text-xs text-slate-700 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-orange-950 flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-orange-600" />
+            Tài khoản mẫu có sẵn:
+          </span>
+          <span className="text-[10px] text-orange-600 font-semibold">Bấm để tự điền</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('admin@smartcook.com');
+              setPassword('Admin123@');
+            }}
+            className="text-left p-2 rounded-lg bg-white border border-orange-200/60 hover:border-orange-400 hover:bg-orange-50 transition-all text-[11px]"
+          >
+            <div className="font-bold text-slate-800">Quản Trị (Admin)</div>
+            <div className="text-slate-500 truncate text-[10px]">admin@smartcook.com</div>
+            <div className="text-slate-400 text-[10px]">Pass: Admin123@</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('user@smartcook.com');
+              setPassword('Password123@');
+            }}
+            className="text-left p-2 rounded-lg bg-white border border-orange-200/60 hover:border-orange-400 hover:bg-orange-50 transition-all text-[11px]"
+          >
+            <div className="font-bold text-slate-800">Người Dùng (User)</div>
+            <div className="text-slate-500 truncate text-[10px]">user@smartcook.com</div>
+            <div className="text-slate-400 text-[10px]">Pass: Password123@</div>
+          </button>
+        </div>
+      </div>
+
       {/* Social login divider */}
-      <div className="relative my-4 text-center">
+      <div className="relative my-3 text-center">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-slate-300/60" />
         </div>
         <span className="relative px-3 bg-[#faf8f5] text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-          Hoặc kết nối qua
+          Hoặc đăng nhập nhanh bằng
         </span>
       </div>
 
-      {/* Social Buttons: Google & Facebook */}
-      <div className="flex items-center justify-center gap-6 pt-1">
+      {/* Social Buttons: Google 1-Click */}
+      <div className="flex items-center justify-center gap-4">
         <button
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="flex flex-col items-center gap-1 group"
+          className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white border border-slate-200 shadow-2xs hover:bg-slate-50 hover:border-orange-300 transition-all text-xs font-bold text-slate-700 active:scale-98"
         >
-          <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200/90 shadow-2xs group-hover:border-orange-300 group-hover:scale-105 transition-all flex items-center justify-center">
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-            </svg>
-          </div>
-          <span className="text-[11px] font-bold text-slate-500 group-hover:text-orange-600 transition-colors">Google</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => { setEmail('user@smartcook.vn'); setPassword('123456'); }}
-          className="flex flex-col items-center gap-1 group"
-        >
-          <div className="w-11 h-11 rounded-2xl bg-[#1877F2] shadow-2xs group-hover:scale-105 transition-all flex items-center justify-center text-white">
-            <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-          </div>
-          <span className="text-[11px] font-bold text-slate-500 group-hover:text-blue-600 transition-colors">Facebook</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span>Đăng nhập với Google</span>
         </button>
       </div>
 
