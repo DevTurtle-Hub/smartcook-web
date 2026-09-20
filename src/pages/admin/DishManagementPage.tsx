@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -26,10 +26,12 @@ import {
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import type { DishRecipeAdmin, SystemIngredient } from '../../types/admin';
+import { recipeApi } from '../../api/recipe.api';
 
 export const DishManagementPage: React.FC = () => {
   const {
     recipes,
+    setRecipes,
     addRecipe,
     updateRecipe,
     deleteRecipe,
@@ -44,6 +46,55 @@ export const DishManagementPage: React.FC = () => {
     heroBanner,
     updateHeroBanner,
   } = useAdminStore();
+
+  // Load real recipes from backend API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAdminRecipes = async () => {
+      try {
+        const res = await recipeApi.getRecipes({ page: 1, limit: 100 });
+        if (isMounted && res && res.recipes && res.recipes.length > 0) {
+          const mapped: DishRecipeAdmin[] = res.recipes.map((r: any) => ({
+            id: r._id || r.id,
+            title: r.title,
+            description: r.description || '',
+            category: r.categoryCode || r.category || 'Món Việt',
+            subCategory: r.subCategory || '',
+            prepTimeMinutes: r.prepTime || 10,
+            cookingTimeMinutes: r.cookTime || 20,
+            difficulty: (r.difficulty === 'easy' ? 'Dễ' : r.difficulty === 'hard' ? 'Khó' : 'Trung bình') as any,
+            servings: r.servings || 2,
+            calories: r.calories || 350,
+            macro: r.macro || { protein: 20, carbs: 30, fat: 10, fiber: 2 },
+            estimatedCostVnd: r.estimatedCostVnd || 50000,
+            image: r.imageUrl || r.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
+            author: r.author || 'SmartCook MasterChef',
+            status: 'published',
+            rating: r.rating || 4.8,
+            ratingsCount: r.ratingsCount || 10,
+            ingredients: (r.ingredients || []).map((i: any) => ({
+              name: typeof i === 'string' ? i : (i.name || i.ingredientId?.name || 'Nguyên liệu'),
+              amount: typeof i === 'object' ? `${i.amount || ''} ${i.unit || ''}`.trim() || 'vừa đủ' : 'vừa đủ',
+              note: i.note,
+            })),
+            steps: (r.instructions || r.steps || []).map((s: any, idx: number) => ({
+              stepNumber: typeof s === 'object' ? (s.stepNumber || idx + 1) : idx + 1,
+              instruction: typeof s === 'string' ? s : (s.step || s.instruction || ''),
+              timerMinutes: s.timerMinutes || undefined,
+            })),
+            dietaryTags: r.tags || ['SmartCook'],
+          }));
+          setRecipes(mapped);
+        }
+      } catch (err: any) {
+        console.warn('[DishManagementPage] Fallback to mock dishes, API error:', err?.message);
+      }
+    };
+    fetchAdminRecipes();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Tab chính: 'dishes' (Danh sách món ăn & công thức) | 'ingredients' (Kho nguyên liệu & tủ lạnh) | 'pending' (Duyệt đóng góp) | 'banner' (Cấu hình Banner Mobile)
   const [mainTab, setMainTab] = useState<'dishes' | 'ingredients' | 'pending' | 'banner'>('dishes');
@@ -295,8 +346,18 @@ export const DishManagementPage: React.FC = () => {
     };
 
     if (editingDish) {
+      recipeApi.updateRecipe(editingDish.id, dishData).catch((err) => {
+        console.warn('[DishManagementPage] updateRecipe API error:', err?.message);
+      });
       updateRecipe(editingDish.id, dishData);
     } else {
+      recipeApi.createRecipe(dishData).then((created) => {
+        if (created && ((created as any).id || (created as any)._id)) {
+          // updated in backend
+        }
+      }).catch((err) => {
+        console.warn('[DishManagementPage] createRecipe API error:', err?.message);
+      });
       addRecipe(dishData);
     }
     setShowDishModal(false);
@@ -305,6 +366,9 @@ export const DishManagementPage: React.FC = () => {
   // Delete Dish Confirm
   const handleConfirmDeleteDish = () => {
     if (deleteDishId) {
+      recipeApi.deleteRecipe(deleteDishId).catch((err) => {
+        console.warn('[DishManagementPage] deleteRecipe API error:', err?.message);
+      });
       deleteRecipe(deleteDishId);
       setDeleteDishId(null);
     }

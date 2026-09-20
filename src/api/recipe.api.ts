@@ -56,21 +56,17 @@ export const recipeApi = {
     }
   },
 
-  createRecipe: async (formData: FormData): Promise<Recipe> => {
-    const res = await apiClient.post<ApiResponse<Recipe>>('/recipes', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  createRecipe: async (data: FormData | Record<string, any>): Promise<Recipe> => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    const headers = isFormData ? { 'Content-Type': 'multipart/form-data' } : {};
+    const res = await apiClient.post<ApiResponse<Recipe>>('/recipes', data, { headers });
     return res.data.data;
   },
 
-  updateRecipe: async (id: string, formData: FormData): Promise<Recipe> => {
-    const res = await apiClient.put<ApiResponse<Recipe>>(`/recipes/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  updateRecipe: async (id: string, data: FormData | Record<string, any>): Promise<Recipe> => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    const headers = isFormData ? { 'Content-Type': 'multipart/form-data' } : {};
+    const res = await apiClient.put<ApiResponse<Recipe>>(`/recipes/${id}`, data, { headers });
     return res.data.data;
   },
 

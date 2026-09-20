@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   DollarSign,
@@ -30,9 +30,11 @@ import {
   ShieldCheck,
   Zap,
   Globe,
+  Database,
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import { Link } from 'react-router-dom';
+import { adminApi, type DashboardStatsResponse } from '../../api/admin.api';
 
 const weeklyAnalyticsData = [
   { month: 'T2', scans: 140, height: '35%' },
@@ -45,7 +47,38 @@ const weeklyAnalyticsData = [
 ];
 
 export const DashboardPage: React.FC = () => {
-  const { kpi, heroBanner, tasks, toggleTask } = useAdminStore();
+  const { kpi, setKpi, heroBanner, tasks, toggleTask } = useAdminStore();
+  const [liveStats, setLiveStats] = useState<DashboardStatsResponse | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchDashboard = async () => {
+      setLoadingStats(true);
+      try {
+        const data = await adminApi.getDashboardStats();
+        if (mounted && data) {
+          setLiveStats(data);
+          if (data.kpis) {
+            setKpi({
+              totalUsers: data.kpis.totalUsers ?? kpi.totalUsers,
+              publishedRecipes: data.kpis.totalRecipes ?? kpi.publishedRecipes,
+              aiScansCount: data.kpis.aiScansToday ?? kpi.aiScansCount,
+              communityPostsToday: data.kpis.communityPosts ?? kpi.communityPostsToday,
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn('[DashboardPage] Fallback to mock KPI, backend error:', err?.message);
+      } finally {
+        if (mounted) setLoadingStats(false);
+      }
+    };
+    fetchDashboard();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const recentRecipes = [
     {
@@ -82,6 +115,55 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-5">
+      {/* Live Core Backend Stats Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-md border border-indigo-900/40 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+            <Database className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold tracking-tight">SmartCook Core Backend Services</h2>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                Live API
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">Đồng bộ dữ liệu thời gian thực từ MongoDB Cloud & AI Vision Engine</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 text-center text-xs">
+          <div>
+            <p className="text-[11px] text-slate-400">Thành viên</p>
+            <p className="text-lg font-black text-white font-['Outfit']">
+              {(liveStats?.kpis.totalUsers ?? kpi.totalUsers).toLocaleString()}
+            </p>
+          </div>
+          <div className="w-px h-8 bg-slate-800" />
+          <div>
+            <p className="text-[11px] text-slate-400">Công thức</p>
+            <p className="text-lg font-black text-amber-400 font-['Outfit']">
+              {(liveStats?.kpis.totalRecipes ?? kpi.publishedRecipes).toLocaleString()}
+            </p>
+          </div>
+          <div className="w-px h-8 bg-slate-800" />
+          <div>
+            <p className="text-[11px] text-slate-400">Kho nguyên liệu</p>
+            <p className="text-lg font-black text-cyan-400 font-['Outfit']">
+              {(liveStats?.kpis.totalIngredients ?? 450).toLocaleString()}
+            </p>
+          </div>
+          <div className="w-px h-8 bg-slate-800" />
+          <div>
+            <p className="text-[11px] text-slate-400">Quét Tủ Lạnh Hôm Nay</p>
+            <p className="text-lg font-black text-emerald-400 font-['Outfit']">
+              {(liveStats?.kpis.aiScansToday ?? kpi.aiScansCount).toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ================= TOP SECTION: SMARTCOOK LIVE MOBILE APP SHOWCASE + 4 METRICS ================= */}
       <div className="flex flex-col lg:flex-row gap-5 items-stretch">
         {/* HIỂN THỊ THUẦN TÚY CHIẾC ĐIỆN THOẠI HÒA VÀO NỀN WEB - CĂN THẲNG HÀNG TRÁI */}

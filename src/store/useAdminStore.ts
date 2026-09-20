@@ -54,6 +54,9 @@ interface AdminState {
   deleteUser: (userId: string) => void;
   updateAIConfig: (config: Partial<AIEngineConfig>) => void;
   addNotification: (notif: Omit<PushNotificationSchedule, 'id'>) => void;
+  setKpi: (kpi: Partial<AdminKPI>) => void;
+  setUsers: (users: AppUserAdmin[]) => void;
+  setRecipes: (recipes: DishRecipeAdmin[]) => void;
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -842,5 +845,20 @@ export const useAdminStore = create<AdminState>((set) => ({
         ...state.kpi,
         publishedRecipes: Math.max(0, state.kpi.publishedRecipes - 1),
       },
+    })),
+
+  setKpi: (kpi) =>
+    set((state) => ({
+      kpi: { ...state.kpi, ...kpi },
+    })),
+
+  setUsers: (users) =>
+    set(() => ({
+      users,
+    })),
+
+  setRecipes: (recipes) =>
+    set(() => ({
+      recipes,
     })),
 }));

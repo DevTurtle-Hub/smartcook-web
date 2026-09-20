@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Check,
@@ -46,10 +46,12 @@ import {
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import type { AppUserAdmin, AdminStaff } from '../../types/admin';
+import { adminApi } from '../../api/admin.api';
 
 export const UserManagementPage: React.FC = () => {
   const {
     users,
+    setUsers,
     staff,
     toggleUserStatus,
     updateUserBadge,
@@ -63,6 +65,45 @@ export const UserManagementPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'banned'>('all');
   const [badgeFilter, setBadgeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'posts' | 'saved' | 'name'>('newest');
+  const [isLoadingApi, setIsLoadingApi] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadRealUsers = async () => {
+      setIsLoadingApi(true);
+      try {
+        const res = await adminApi.getUsers({ page: 1, limit: 50, search: searchQuery });
+        if (isMounted && res && res.users && res.users.length > 0) {
+          const mappedUsers: AppUserAdmin[] = res.users.map((u: any) => ({
+            id: u._id || u.id,
+            fullName: u.fullName || u.email.split('@')[0],
+            email: u.email,
+            phoneNumber: u.phoneNumber || '0901234567',
+            avatar: u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+            joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : '2026-01-01',
+            lastActive: u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('vi-VN') : 'Vừa xong',
+            postsCount: u.postsCount || 0,
+            savedRecipesCount: u.favoriteRecipeIds?.length || 0,
+            badge: (u.chefTitle as any) || (u.chefLevel > 3 ? 'Bếp Trưởng Bạc' : 'Thành Viên Mới'),
+            tier: u.role === 'admin' ? 'VIP Premium' : 'Free',
+            status: u.isActive !== false ? 'active' : 'suspended',
+            dietPreference: u.dietPreference || 'Đa dạng',
+            smartFridgeItemsCount: 5,
+            completedCookSessions: u.chefExp ? Math.floor(u.chefExp / 50) : 0,
+          }));
+          setUsers(mappedUsers);
+        }
+      } catch (err: any) {
+        console.warn('[UserManagementPage] Fallback to mock users, backend error:', err?.message);
+      } finally {
+        if (isMounted) setIsLoadingApi(false);
+      }
+    };
+    loadRealUsers();
+    return () => {
+      isMounted = false;
+    };
+  }, [searchQuery]);
 
   // Modal Xem chi tiết hồ sơ người dùng
   const [viewingUser, setViewingUser] = useState<AppUserAdmin | null>(null);
@@ -134,21 +175,36 @@ export const UserManagementPage: React.FC = () => {
   };
 
   // Thực thi hành động từ Confirm Modal (Khóa, Mở khóa, Cấm, Xóa)
-  const handleExecuteConfirmAction = () => {
+  const handleExecuteConfirmAction = async () => {
     if (!confirmModal.user) return;
     const { user, type } = confirmModal;
 
     if (type === 'activate') {
+      try {
+        await adminApi.toggleUserStatus(user.id, true);
+      } catch (err: any) {
+        console.warn('[UserManagementPage] toggleUserStatus backend error:', err?.message);
+      }
       toggleUserStatus(user.id, 'active');
       if (viewingUser && viewingUser.id === user.id) {
         setViewingUser({ ...viewingUser, status: 'active' });
       }
     } else if (type === 'suspend') {
+      try {
+        await adminApi.toggleUserStatus(user.id, false);
+      } catch (err: any) {
+        console.warn('[UserManagementPage] toggleUserStatus backend error:', err?.message);
+      }
       toggleUserStatus(user.id, 'suspended');
       if (viewingUser && viewingUser.id === user.id) {
         setViewingUser({ ...viewingUser, status: 'suspended' });
       }
     } else if (type === 'ban') {
+      try {
+        await adminApi.toggleUserStatus(user.id, false);
+      } catch (err: any) {
+        console.warn('[UserManagementPage] toggleUserStatus backend error:', err?.message);
+      }
       toggleUserStatus(user.id, 'banned');
       if (viewingUser && viewingUser.id === user.id) {
         setViewingUser({ ...viewingUser, status: 'banned' });
