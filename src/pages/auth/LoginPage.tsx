@@ -1,17 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, AlertCircle, ArrowRight, ShieldCheck, ChefHat, User, Sparkles } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('user@smartcook.vn');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!googleClientId) return;
+
+    const setupGoogle = () => {
+      if ((window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.initialize({
+          client_id: googleClientId,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          callback: async (response: any) => {
+            try {
+              setLoading(true);
+              const data = await authApi.googleLogin(response.credential);
+              const accessToken = data.tokens?.accessToken || data.accessToken || '';
+              const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+              setAuth(data.user, accessToken, refreshToken);
+              if (data.user.role === 'admin') {
+                navigate('/admin/dashboard', { replace: true });
+              } else {
+                navigate('/', { replace: true });
+              }
+            } catch (authErr: any) {
+              setError(authErr.message || 'Xác thực Google thất bại');
+            } finally {
+              setLoading(false);
+            }
+          },
+        });
+
+        const btnContainer = document.getElementById('googleSignInContainer');
+        if (btnContainer) {
+          btnContainer.innerHTML = '';
+          (window as any).google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: 360,
+            text: 'signin_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+          });
+        }
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      setupGoogle();
+    } else {
+      const timer = setInterval(() => {
+        if ((window as any).google?.accounts?.id) {
+          clearInterval(timer);
+          setupGoogle();
+        }
+      }, 300);
+      return () => clearInterval(timer);
+    }
+  }, [navigate, setAuth]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,57 +95,6 @@ export const LoginPage: React.FC = () => {
         err.response?.data?.message ||
         'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.'
       );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
-
-    try {
-      // Check if Google Identity Services is available
-      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-      if ((window as any).google?.accounts?.id && googleClientId) {
-        (window as any).google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response: any) => {
-            try {
-              const data = await authApi.googleLogin(response.credential);
-              const accessToken = data.tokens?.accessToken || data.accessToken || '';
-              const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
-              setAuth(data.user, accessToken, refreshToken);
-              if (data.user.role === 'admin') {
-                navigate('/admin/dashboard', { replace: true });
-              } else {
-                navigate('/', { replace: true });
-              }
-            } catch (authErr: any) {
-              setError(authErr.message || 'Xác thực Google thất bại');
-            }
-          },
-        });
-        (window as any).google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            console.warn('[SmartCook Web] Google prompt notice:', notification.getNotDisplayedReason?.());
-          }
-        });
-      } else {
-        // Fallback for development if Client ID is not configured yet
-        const data = await authApi.googleLogin('dev_mock_google_id_token');
-        const accessToken = data.tokens?.accessToken || data.accessToken || '';
-        const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
-        setAuth(data.user, accessToken, refreshToken);
-        if (data.user.role === 'admin') {
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Đăng nhập Google không thành công.');
     } finally {
       setLoading(false);
     }
@@ -196,22 +203,9 @@ export const LoginPage: React.FC = () => {
         </span>
       </div>
 
-      {/* Social Buttons: Google 1-Click */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white border border-slate-200 shadow-2xs hover:bg-slate-50 hover:border-orange-300 transition-all text-xs font-bold text-slate-700 active:scale-98"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-          </svg>
-          <span>Đăng nhập với Google</span>
-        </button>
+      {/* Google Official GIS Button */}
+      <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
+        <div id="googleSignInContainer" className="w-full flex justify-center"></div>
       </div>
 
       {/* Dòng link text chuyển đổi xuống cuối cùng */}
