@@ -20,90 +20,71 @@ export const LoginPage: React.FC = () => {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    // 1. Admin Credentials Shortcut
-    if (trimmedEmail === 'admin@gmail.com' && password === 'admin123') {
-      const adminUser = {
-        _id: 'admin-master-id',
-        email: 'admin@gmail.com',
-        firstName: 'SmartCook',
-        lastName: 'Admin',
-        fullName: 'Yann Admin',
-        role: 'admin' as const,
-        chefExp: 999,
-        level: 'Super Admin',
-        isActive: true,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      };
-
-      setAuth(adminUser, 'admin-token-secret-xyz', 'admin-refresh-token-xyz');
-      setLoading(false);
-      navigate('/admin/dashboard', { replace: true });
-      return;
-    }
-
-    // 2. Demo User Shortcut
-    if ((trimmedEmail === 'user@smartcook.vn' || trimmedEmail === 'user@gmail.com') && password === '123456') {
-      const regularUser = {
-        _id: 'user-demo-id',
-        email: trimmedEmail,
-        firstName: 'Ngọc',
-        lastName: 'Lê',
-        fullName: 'Lê Như Ngọc',
-        role: 'user' as const,
-        chefExp: 350,
-        level: 'Đầu bếp tài ba',
-        isActive: true,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-        preferences: {
-          hasCompletedSurvey: true,
-          portion: '3-4 người',
-          healthGoal: 'healthy',
-          cookingTime: 'quick',
-        }
-      };
-
-      setAuth(regularUser, 'user-token-demo-xyz', 'user-refresh-token-demo-xyz');
-      setLoading(false);
-      navigate('/recipes', { replace: true });
-      return;
-    }
-
-    // 3. Try backend API
     try {
       const data = await authApi.login({ email: trimmedEmail, password });
-      const accessToken = data.tokens?.accessToken || data.accessToken || 'token';
-      const refreshToken = data.tokens?.refreshToken || data.refreshToken || 'refresh';
+      const accessToken = data.tokens?.accessToken || data.accessToken || '';
+      const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
       setAuth(data.user, accessToken, refreshToken);
 
       if (data.user.role === 'admin') {
         navigate('/admin/dashboard', { replace: true });
       } else {
-        navigate('/recipes', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
-      // Fallback for demo testing when backend is not running
-      if (password.length >= 6) {
-        const defaultUser = {
-          _id: `user-${Date.now()}`,
-          email: trimmedEmail,
-          firstName: trimmedEmail.split('@')[0] || 'User',
-          lastName: '',
-          fullName: trimmedEmail.split('@')[0] || 'Người dùng Bếp',
-          role: 'user' as const,
-          chefExp: 150,
-          level: 'Bếp gia đình',
-          isActive: true,
-          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80',
-        };
-        setAuth(defaultUser, 'user-token-fallback', 'user-refresh-token-fallback');
-        navigate('/recipes', { replace: true });
-        return;
-      }
-
       setError(
+        err.message ||
         err.response?.data?.message ||
         'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.'
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      // Check if Google Identity Services is available
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+      if ((window as any).google?.accounts?.id && googleClientId) {
+        (window as any).google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: any) => {
+            try {
+              const data = await authApi.googleLogin(response.credential);
+              const accessToken = data.tokens?.accessToken || data.accessToken || '';
+              const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+              setAuth(data.user, accessToken, refreshToken);
+              if (data.user.role === 'admin') {
+                navigate('/admin/dashboard', { replace: true });
+              } else {
+                navigate('/', { replace: true });
+              }
+            } catch (authErr: any) {
+              setError(authErr.message || 'Xác thực Google thất bại');
+            }
+          },
+        });
+        (window as any).google.accounts.id.prompt();
+      } else {
+        // Fallback for development if Client ID is not configured yet
+        const mockGoogleToken = 'google_id_token_demo_' + Date.now();
+        const data = await authApi.googleLogin(mockGoogleToken);
+        const accessToken = data.tokens?.accessToken || data.accessToken || '';
+        const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+        setAuth(data.user, accessToken, refreshToken);
+        if (data.user.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Đăng nhập Google không thành công.');
     } finally {
       setLoading(false);
     }
@@ -216,7 +197,8 @@ export const LoginPage: React.FC = () => {
       <div className="flex items-center justify-center gap-6 pt-1">
         <button
           type="button"
-          onClick={() => { setEmail('user@smartcook.vn'); setPassword('123456'); }}
+          onClick={handleGoogleLogin}
+          disabled={loading}
           className="flex flex-col items-center gap-1 group"
         >
           <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200/90 shadow-2xs group-hover:border-orange-300 group-hover:scale-105 transition-all flex items-center justify-center">

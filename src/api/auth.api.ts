@@ -46,15 +46,55 @@ const MOCK_USER: User = {
   },
 };
 
+const normalizeAuthResponse = (raw: any): AuthResponse => {
+  if (!raw) {
+    throw new Error('Không nhận được dữ liệu phản hồi từ máy chủ.');
+  }
+
+  const rawUser = raw.user || raw;
+  const user: User = {
+    _id: rawUser._id || rawUser.id || 'usr-' + Date.now(),
+    email: rawUser.email || '',
+    firstName: rawUser.firstName || '',
+    lastName: rawUser.lastName || '',
+    fullName: rawUser.fullName || `${rawUser.lastName || ''} ${rawUser.firstName || ''}`.trim(),
+    avatar: rawUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    role: rawUser.role === 'admin' ? 'admin' : 'user',
+    chefExp: rawUser.chefExp ?? 0,
+    level: rawUser.level || 'Tập sự',
+    isActive: rawUser.isActive ?? true,
+    preferences: rawUser.preferences,
+  };
+
+  const accessToken = raw.tokens?.accessToken || raw.accessToken || '';
+  const refreshToken = raw.tokens?.refreshToken || raw.refreshToken || '';
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+    tokens: {
+      accessToken,
+      refreshToken,
+      expiresIn: raw.tokens?.expiresIn || '7d',
+    },
+  };
+};
+
 export const authApi = {
   login: async (credentials: { email: string; password?: string }): Promise<AuthResponse> => {
     try {
-      const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
-      return res.data.data;
+      const res = await apiClient.post<ApiResponse<any>>('/auth/login', credentials);
+      return normalizeAuthResponse(res.data.data);
     } catch (err: any) {
-      // Standalone Frontend Mode Fallback (Allows teammates to test without running backend)
-      console.warn('[SmartCook Web] Backend unreachable or auth error. Falling back to Standalone Mock Mode for development:', err.message);
+      // If backend responded with an error (e.g., 400, 401, 403, 404), throw it so user gets feedback
+      if (err.response) {
+        const errorMsg = err.response.data?.message || err.response.data?.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
+        throw new Error(errorMsg);
+      }
 
+      // If backend server is completely offline / network error, fallback to standalone dev mode
+      console.warn('[SmartCook Web] Backend unreachable. Falling back to Standalone Mock Mode for development:', err.message);
       const isEmailAdmin = credentials.email.toLowerCase().includes('admin');
       const targetUser = isEmailAdmin ? MOCK_ADMIN : { ...MOCK_USER, email: credentials.email };
 
@@ -73,9 +113,14 @@ export const authApi = {
 
   googleLogin: async (idToken: string): Promise<AuthResponse> => {
     try {
-      const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/google', { idToken });
-      return res.data.data;
-    } catch {
+      const res = await apiClient.post<ApiResponse<any>>('/auth/google', { idToken });
+      return normalizeAuthResponse(res.data.data);
+    } catch (err: any) {
+      if (err.response) {
+        const errorMsg = err.response.data?.message || err.response.data?.error || 'Đăng nhập Google thất bại.';
+        throw new Error(errorMsg);
+      }
+      console.warn('[SmartCook Web] Google Auth fallback to mock:', err.message);
       return {
         user: MOCK_USER,
         accessToken: 'mock_jwt_google_access_token',
@@ -86,9 +131,14 @@ export const authApi = {
 
   register: async (data: { email: string; password?: string; firstName: string; lastName: string }): Promise<AuthResponse> => {
     try {
-      const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/register', data);
-      return res.data.data;
-    } catch {
+      const res = await apiClient.post<ApiResponse<any>>('/auth/register', data);
+      return normalizeAuthResponse(res.data.data);
+    } catch (err: any) {
+      if (err.response) {
+        const errorMsg = err.response.data?.message || err.response.data?.error || 'Đăng ký tài khoản không thành công.';
+        throw new Error(errorMsg);
+      }
+      console.warn('[SmartCook Web] Backend unreachable. Fallback register:', err.message);
       const newUser: User = {
         _id: 'mock-reg-id-' + Date.now(),
         email: data.email,
@@ -109,29 +159,49 @@ export const authApi = {
     }
   },
 
-  getMe: async () => {
+  getMe: async (): Promise<User> => {
     try {
-      const res = await apiClient.get<ApiResponse<User>>('/auth/me');
-      return res.data.data;
-    } catch {
+      const res = await apiClient.get<ApiResponse<any>>('/auth/me');
+      const u = res.data.data;
+      return {
+        _id: u._id || u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        fullName: u.fullName || `${u.lastName || ''} ${u.firstName || ''}`.trim(),
+        avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        role: u.role === 'admin' ? 'admin' : 'user',
+        chefExp: u.chefExp ?? 0,
+        level: u.level || 'Tập sự',
+        isActive: u.isActive ?? true,
+        preferences: u.preferences,
+      };
+    } catch (err: any) {
+      console.warn('[SmartCook Web] getMe error, using local/mock user');
       return MOCK_USER;
     }
   },
 
-  logout: async () => {
+  logout: async (): Promise<void> => {
     try {
       await apiClient.post<ApiResponse<void>>('/auth/logout');
     } catch {
-      // ignore
+      // ignore network errors on logout
     }
   },
 
-  updateSurvey: async (preferences: any) => {
+  updateSurvey: async (preferences: any): Promise<User> => {
     try {
-      const res = await apiClient.post<ApiResponse<User>>('/auth/survey', preferences);
-      return res.data.data;
-    } catch {
+      const res = await apiClient.post<ApiResponse<any>>('/auth/survey', preferences);
+      const u = res.data.data;
+      return {
+        ...u,
+        _id: u._id || u.id,
+      };
+    } catch (err: any) {
+      console.warn('[SmartCook Web] updateSurvey error, saving locally');
       return { ...MOCK_USER, preferences };
     }
   },
 };
+

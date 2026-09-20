@@ -32,7 +32,43 @@ export const RegisterPage: React.FC = () => {
       setAuth(data.user, accessToken, refreshToken);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Đăng ký không thành công. Vui lòng thử lại.');
+      setError(err.message || err.response?.data?.message || 'Đăng ký không thành công. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if ((window as any).google?.accounts?.id && googleClientId) {
+        (window as any).google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: any) => {
+            try {
+              const data = await authApi.googleLogin(response.credential);
+              const accessToken = data.tokens?.accessToken || data.accessToken || '';
+              const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+              setAuth(data.user, accessToken, refreshToken);
+              navigate('/');
+            } catch (authErr: any) {
+              setError(authErr.message || 'Xác thực Google thất bại');
+            }
+          },
+        });
+        (window as any).google.accounts.id.prompt();
+      } else {
+        const mockGoogleToken = 'google_id_token_demo_' + Date.now();
+        const data = await authApi.googleLogin(mockGoogleToken);
+        const accessToken = data.tokens?.accessToken || data.accessToken || '';
+        const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
+        setAuth(data.user, accessToken, refreshToken);
+        navigate('/');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Đăng ký Google không thành công.');
     } finally {
       setLoading(false);
     }
@@ -152,7 +188,8 @@ export const RegisterPage: React.FC = () => {
       <div className="flex items-center justify-center gap-6 pt-1">
         <button
           type="button"
-          onClick={() => { setEmail('user@smartcook.vn'); setPassword('123456'); setFirstName('An'); setLastName('Nguyễn'); }}
+          onClick={handleGoogleRegister}
+          disabled={loading}
           className="flex flex-col items-center gap-1 group"
         >
           <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200/90 shadow-2xs group-hover:border-orange-300 group-hover:scale-105 transition-all flex items-center justify-center">
