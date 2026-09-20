@@ -16,4 +16,9 @@ export const adminApi = {
     const res = await apiClient.patch<ApiResponse<any>>(`/admin/users/${userId}/status`, { isActive });
     return res.data.data;
   },
+
+  updateUserRole: async (userId: string, role: 'user' | 'admin') => {
+    const res = await apiClient.patch<ApiResponse<any>>(`/admin/users/${userId}/role`, { role });
+    return res.data.data;
+  },
 };
