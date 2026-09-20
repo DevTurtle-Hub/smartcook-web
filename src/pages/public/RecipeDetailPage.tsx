@@ -28,6 +28,8 @@ import type { Recipe } from '../../types';
 import { UserHeader } from '../../components/user/UserHeader';
 import { richFallbackRecipes, type ExtendedRecipe } from './RecipeListPage';
 import { useCartStore } from '../../store/useCartStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { cookingHistoryApi } from '../../api/cookingHistory.api';
 import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupermarketsModal';
 
 // Bản đồ giá tiền ước tính mẫu cho các nguyên liệu phổ biến tại Việt Nam
@@ -75,8 +77,11 @@ export const RecipeDetailPage: React.FC = () => {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [addedNotice, setAddedNotice] = useState<string | null>(null);
+  const [completedNotice, setCompletedNotice] = useState<string | null>(null);
+  const [isSubmittingCooking, setIsSubmittingCooking] = useState(false);
 
   const { addItem, openCart } = useCartStore();
+  const { updateUser } = useAuthStore();
 
   // Timer State
   const [timerSeconds, setTimerSeconds] = useState(300);
@@ -138,23 +143,22 @@ export const RecipeDetailPage: React.FC = () => {
     steps: [
       {
         stepNumber: 1,
-        instruction: 'Đùi gà khía nhẹ, ướp 2 thìa sốt mật ong tỏi và chút tiêu trong 5 phút.',
+        instruction: 'Ướp đùi gà phi lê với 2 thìa sốt mật ong tỏi, một chút tiêu đen trong khoảng 5 phút cho ngấm đều.',
         timerMinutes: 5,
       },
       {
         stepNumber: 2,
-        instruction: 'Áp chảo đùi gà vàng giòn 2 mặt cho đến khi sốt keo óng ánh thơm phức.',
-        timerMinutes: 5,
+        instruction: 'Làm nóng chảo chống dính với một chút dầu ăn, áp chảo đùi gà vàng ruộm hai mặt ở lửa vừa (mỗi mặt khoảng 4 - 5 phút).',
+        timerMinutes: 8,
       },
       {
         stepNumber: 3,
-        instruction: 'Ốp la 1 quả trứng lòng đào trong 2 phút; thái bơ sáp và bổ đôi cà chua bi.',
+        instruction: 'Ốp la 1 quả trứng gà sao cho lòng trắng chín giòn rìa, lòng đào sánh ngậy thơm béo.',
         timerMinutes: 2,
       },
       {
         stepNumber: 4,
-        instruction: 'Xếp cơm ra đĩa, đặt gà thái lát, trứng ốp la, bơ và cà chua, rưới nước sốt lên và thưởng thức.',
-        timerMinutes: 1,
+        instruction: 'Xới cơm nóng ra đĩa tròn, xếp thịt gà thái lát, đặt trứng ốp la lên trên. Thêm bơ sáp thái mỏng, cà chua bi và rưới nước sốt gà óng ả lên bề mặt.',
       },
     ],
     ratingAverage: 5.0,
@@ -167,16 +171,15 @@ export const RecipeDetailPage: React.FC = () => {
 
   const recipe: ExtendedRecipe = (recipeData as ExtendedRecipe) || fallbackMatch || defaultRecipe;
 
-  const displayIngredients = (recipe.ingredients && recipe.ingredients.length > 0
-    ? recipe.ingredients
-    : defaultRecipe.ingredients).map((ing) => ({
-      ...ing,
-      price: (ing as any).price || getIngredientEstimatedPrice(ing.name),
-    }));
+  const displayIngredients = recipe.ingredients.map((ing) => ({
+    name: ing.name,
+    amount: ing.amount,
+    unit: ing.unit,
+    price: getIngredientEstimatedPrice(ing.name),
+    notes: ing.notes,
+  }));
 
-  const displaySteps = recipe.steps && recipe.steps.length > 0
-    ? recipe.steps
-    : defaultRecipe.steps;
+  const displaySteps = recipe.steps;
 
   // Tính tổng chi phí ban đầu và chi phí còn lại sau khi tick bỏ những thứ đã có sẵn
   const totalOriginalCost = displayIngredients.reduce((sum, ing) => sum + ing.price, 0);
@@ -190,6 +193,37 @@ export const RecipeDetailPage: React.FC = () => {
       ...prev,
       [name]: !prev[name],
     }));
+  };
+
+  const handleToggleFavorite = async () => {
+    const nextState = !isFavorite;
+    setIsFavorite(nextState);
+    if (recipe._id && !recipe._id.startsWith('seed-')) {
+      try {
+        await recipeApi.toggleFavorite(recipe._id);
+      } catch (err) {
+        console.warn('Failed to toggle favorite in backend:', err);
+      }
+    }
+  };
+
+  const handleCompleteCooking = async () => {
+    setIsSubmittingCooking(true);
+    try {
+      const res = await cookingHistoryApi.completeCookingSession(recipe._id);
+      if (res?.user) {
+        updateUser({
+          chefExp: res.user.chefExp,
+          level: res.user.level,
+        });
+      }
+      setCompletedNotice('🎉 Chúc mừng! Bạn đã hoàn thành nấu món ăn và nhận được +50 XP thưởng đầu bếp!');
+      setTimeout(() => setCompletedNotice(null), 6000);
+    } catch (err) {
+      console.warn('Could not record cooking session:', err);
+    } finally {
+      setIsSubmittingCooking(false);
+    }
   };
 
   const handleAddToCart = (ing: { name: string; amount: number; unit: string; price: number; notes?: string }) => {
@@ -323,7 +357,7 @@ export const RecipeDetailPage: React.FC = () => {
                 {/* Nút Trái tim trắng bo tròn ở góc trên phải */}
                 <button
                   type="button"
-                  onClick={() => setIsFavorite(!isFavorite)}
+                  onClick={handleToggleFavorite}
                   className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 hover:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
                 >
                   <Heart className={`w-4 h-4 transition-colors ${isFavorite ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}`} />
@@ -650,8 +684,8 @@ export const RecipeDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 4. NÚT "NẤU NGAY" GỌN GÀNG, SANG TRỌNG Ở DƯỚI CÙNG */}
-            <div className="pt-3">
+            {/* 4. CÁC NÚT ĐIỀU KHIỂN NẤU VÀ HOÀN THÀNH (+50 XP) */}
+            <div className="pt-3 flex flex-wrap items-center gap-3">
               <button
                 onClick={handleStartCooking}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-sm shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 group"
@@ -660,8 +694,23 @@ export const RecipeDetailPage: React.FC = () => {
                 <span>BẮT ĐẦU NẤU NGAY</span>
                 <ChevronRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
               </button>
+
+              <button
+                onClick={handleCompleteCooking}
+                disabled={isSubmittingCooking}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-sm shadow-md shadow-emerald-600/25 hover:shadow-lg hover:shadow-emerald-600/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCheck className="w-4 h-4 text-white" />
+                <span>{isSubmittingCooking ? 'Đang ghi nhận...' : 'Đã Nấu Xong (+50 XP)'}</span>
+              </button>
             </div>
 
+            {completedNotice && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold flex items-center gap-2 animate-bounce">
+                <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{completedNotice}</span>
+              </div>
+            )}
           </div>
 
         </div>

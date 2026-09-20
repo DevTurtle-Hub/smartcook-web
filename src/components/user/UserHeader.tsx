@@ -22,6 +22,7 @@ import {
   Refrigerator,
   ArrowRight
 } from 'lucide-react';
+import { authApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
 import { GroceryCartDrawer } from './GroceryCartDrawer';
@@ -55,9 +56,14 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsUserMenuOpen(false);
     setIsMobileMenuOpen(false);
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignore network errors on logout
+    }
     logout();
     navigate('/');
   };

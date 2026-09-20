@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Refrigerator,
@@ -25,6 +25,7 @@ import { UserHeader } from '../../components/user/UserHeader';
 import { richFallbackRecipes, type ExtendedRecipe } from '../public/RecipeListPage';
 import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupermarketsModal';
 import { useCartStore } from '../../store/useCartStore';
+import { fridgeApi, type FridgeItemDTO } from '../../api/fridge.api';
 
 // Danh sách các danh mục nguyên liệu thông dụng trong căn bếp Việt
 const INGREDIENT_CATEGORIES = [
@@ -66,6 +67,7 @@ export const MyKitchenPage: React.FC = () => {
     'Cà chua bi',
     'Cơm trắng'
   ]);
+  const [fridgeItems, setFridgeItems] = useState<FridgeItemDTO[]>([]);
   const [customInput, setCustomInput] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'ready' | 'missing1_2'>('all');
   const [isSupermarketModalOpen, setIsSupermarketModalOpen] = useState(false);
@@ -73,33 +75,83 @@ export const MyKitchenPage: React.FC = () => {
 
   const { addItem, openCart } = useCartStore();
 
+  // Nạp dữ liệu tủ lạnh từ Backend MongoDB
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFridge = async () => {
+      try {
+        const items = await fridgeApi.getMyFridge();
+        if (isMounted && items && items.length > 0) {
+          setFridgeItems(items);
+          setSelectedIngredients(items.map((it) => it.name));
+        }
+      } catch (err) {
+        console.warn('[SmartCook Web] Failed to fetch fridge items:', err);
+      }
+    };
+    fetchFridge();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Chuẩn hóa chuỗi nguyên liệu
   const normalize = (str: string) =>
     str.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   // Thêm nguyên liệu từ input
-  const handleAddCustom = (e: React.FormEvent) => {
+  const handleAddCustom = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = customInput.trim();
     if (!trimmed) return;
     if (!selectedIngredients.some((ing) => normalize(ing) === normalize(trimmed))) {
-      setSelectedIngredients([...selectedIngredients, trimmed]);
+      setSelectedIngredients((prev) => [...prev, trimmed]);
+      setCustomInput('');
+      try {
+        const updatedList = await fridgeApi.addItem({ name: trimmed, storageLocation: 'chilled' });
+        setFridgeItems(updatedList);
+      } catch (err) {
+        console.warn('Failed to sync added fridge item:', err);
+      }
+    } else {
+      setCustomInput('');
     }
-    setCustomInput('');
   };
 
   // Toggle chọn nguyên liệu
-  const toggleIngredient = (name: string) => {
+  const toggleIngredient = async (name: string) => {
     if (selectedIngredients.some((ing) => normalize(ing) === normalize(name))) {
-      setSelectedIngredients(selectedIngredients.filter((ing) => normalize(ing) !== normalize(name)));
+      setSelectedIngredients((prev) => prev.filter((ing) => normalize(ing) !== normalize(name)));
+      const found = fridgeItems.find((it) => normalize(it.name) === normalize(name));
+      const itemId = found?._id || found?.id;
+      if (itemId) {
+        try {
+          const updatedList = await fridgeApi.removeItem(itemId);
+          setFridgeItems(updatedList);
+        } catch (err) {
+          console.warn('Failed to remove fridge item from backend:', err);
+        }
+      }
     } else {
-      setSelectedIngredients([...selectedIngredients, name]);
+      setSelectedIngredients((prev) => [...prev, name]);
+      try {
+        const updatedList = await fridgeApi.addItem({ name, storageLocation: 'chilled' });
+        setFridgeItems(updatedList);
+      } catch (err) {
+        console.warn('Failed to sync added fridge item:', err);
+      }
     }
   };
 
   // Xóa toàn bộ
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     setSelectedIngredients([]);
+    setFridgeItems([]);
+    try {
+      await fridgeApi.clearFridge();
+    } catch (err) {
+      console.warn('Failed to clear fridge in backend:', err);
+    }
   };
 
   // Tính toán kết quả so khớp món ăn với nguyên liệu người dùng đang có

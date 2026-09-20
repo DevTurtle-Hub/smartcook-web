@@ -1,11 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { Award, Flame, Heart, Sparkles, CheckCircle2, User as UserIcon, Mail, ShieldCheck, ArrowRight, Utensils } from 'lucide-react';
+import { Award, Flame, Heart, Sparkles, CheckCircle2, User as UserIcon, Mail, ShieldCheck, ArrowRight, Utensils, History, Clock } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { UserHeader } from '../../components/user/UserHeader';
+import { authApi } from '../../api/auth.api';
+import { cookingHistoryApi, type CookingRecordDTO } from '../../api/cookingHistory.api';
 
 export const ProfilePage: React.FC = () => {
-  const { user, isAuthenticated, isAdmin } = useAuthStore();
+  const { user, isAuthenticated, isAdmin, updateUser } = useAuthStore();
+  const [cookingHistory, setCookingHistory] = useState<CookingRecordDTO[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      authApi.getMe().then((freshUser) => {
+        if (freshUser) {
+          updateUser(freshUser);
+        }
+      }).catch(() => {});
+
+      cookingHistoryApi.getMyCookingHistory().then((history) => {
+        if (history) {
+          setCookingHistory(history);
+        }
+      }).catch(() => {});
+    }
+  }, [isAuthenticated, updateUser]);
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/auth/login" replace />;
@@ -103,6 +122,40 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Cooking History Card */}
+        {cookingHistory.length > 0 && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-orange-100 space-y-4">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-lg font-heading">
+              <History className="w-5 h-5 text-orange-500" />
+              <h2>Lịch Sử Món Đã Nấu Gần Đây ({cookingHistory.length})</h2>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {cookingHistory.slice(0, 5).map((record) => (
+                <div key={record._id} className="py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs">
+                      🍳
+                    </span>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-800">
+                        {record.recipeId?.title || 'Món ăn gia đình'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{new Date(record.cookedAt).toLocaleDateString('vi-VN')}</span>
+                        {record.notes && <span>• {record.notes}</span>}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                    +50 XP
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Favorite Recipes shortcut */}
         <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white rounded-3xl p-6 sm:p-7 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">

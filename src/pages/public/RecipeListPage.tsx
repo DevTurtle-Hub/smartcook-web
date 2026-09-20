@@ -255,10 +255,17 @@ export const RecipeListPage: React.FC = () => {
     return matchesSearch && matchesCat && matchesBadge;
   });
 
-  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+  const toggleFavorite = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
     setSavedRecipes((prev) => ({ ...prev, [id]: !prev[id] }));
+    if (!id.startsWith('seed-')) {
+      try {
+        await recipeApi.toggleFavorite(id);
+      } catch (err) {
+        console.warn('Failed to toggle favorite in backend:', err);
+      }
+    }
   };
 
   return (
