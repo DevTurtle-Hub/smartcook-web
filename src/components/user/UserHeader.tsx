@@ -25,7 +25,9 @@ import {
 import { authApi } from '../../api/auth.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
+import { useChatStore } from '../../store/useChatStore';
 import { GroceryCartDrawer } from './GroceryCartDrawer';
+import { CulinaryChatModal } from '../chat/CulinaryChatModal';
 
 interface UserHeaderProps {
   isLandingPage?: boolean;
@@ -34,6 +36,7 @@ interface UserHeaderProps {
 export const UserHeader: React.FC<UserHeaderProps> = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuthStore();
   const { items: cartItems, toggleCart, openCart, getTotalPrice } = useCartStore();
+  const { toggleChat, conversations } = useChatStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,6 +47,9 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
 
   const cartTotalCount = isAuthenticated ? cartItems.length : 0;
   const totalPrice = isAuthenticated ? getTotalPrice() : 0;
+  const totalUnreadChats = isAuthenticated 
+    ? conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+    : 0;
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -247,6 +253,25 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
         {/* 3. CỘT PHẢI: TẢI APP, GIỎ HÀNG & TÀI KHOẢN NGƯỜI DÙNG */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           
+          {/* NÚT TIN NHẮN BẾP (CULINARY CHAT LOUNGE) */}
+          <button
+            onClick={toggleChat}
+            className="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white hover:bg-orange-50/80 border border-slate-200/90 hover:border-orange-300 transition-all duration-200 shadow-2xs hover:shadow-xs group"
+            title="Mở phòng chat giao lưu ẩm thực"
+          >
+            <div className="relative">
+              <MessageCircle className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
+              {totalUnreadChats > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs animate-in zoom-in-50 duration-200">
+                  {totalUnreadChats}
+                </span>
+              )}
+            </div>
+            <span className="hidden sm:inline font-bold text-xs text-slate-800 group-hover:text-orange-600 transition-colors">
+              Nhắn tin
+            </span>
+          </button>
+
           {/* NÚT GIỎ HÀNG ĐI CHỢ (NỔI BẬT Ở HEADER) */}
           <button
             onClick={toggleCart}
@@ -516,6 +541,9 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
 
       {/* KHUNG TO DÀI CHI TIẾT GIỎ HÀNG ĐI CHỢ (DRAWER SLIDE-OUT HIỆN ĐẠI) */}
       <GroceryCartDrawer />
+
+      {/* MODAL TRÒ CHUYỆN BẾP (CULINARY CHAT LOUNGE - RỘNG GẦN FULL MÀN HÌNH) */}
+      <CulinaryChatModal />
     </header>
   );
 };
