@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { recipeApi } from '../../api/recipe.api';
 import type { Recipe } from '../../types';
 import { UserHeader } from '../../components/user/UserHeader';
+import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
 
 export interface ExtendedRecipe extends Recipe {
   badgeType?: 'hot' | 'popular' | 'trending' | 'chef_choice' | 'quick';
@@ -453,9 +454,11 @@ export const RecipeListPage: React.FC = () => {
                   {/* PHẦN 1: ẢNH MÓN ĂN BO TRÒN GÓC (GIỐNG HÌNH MẪU) KÈM NÚT TIM & BADGE HOT/POPULAR */}
                   <div className="relative w-full aspect-square rounded-[22px] overflow-hidden bg-slate-100">
                     <img
-                      src={recipe.image}
+                      src={resolveRecipeImage(recipe.image, recipe.title || recipe.category)}
                       alt={recipe.title}
+                      onError={(e) => handleImageError(e, resolveRecipeImage(null, recipe.title || recipe.category))}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
                     />
 
                     {/* BADGE HOT / POPULAR NẰM Ở GÓC TRÊN TRÁI ẢNH */}
