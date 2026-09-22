@@ -11,7 +11,9 @@ import {
   Bot,
   Flame,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  LogIn
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { aiApi, type ChatMessageContext } from '../../api/ai.api';
@@ -69,13 +71,15 @@ export const FloatingChefAssistant: React.FC = () => {
     }
   }, [messages, isTyping, isOpen]);
 
-  // Focus ô input khi mở modal
+  // Focus ô input khi mở modal (chỉ khi đã đăng nhập)
   useEffect(() => {
     if (isOpen) {
       setShowTooltip(false);
-      setTimeout(() => inputRef.current?.focus(), 150);
+      if (isAuthenticated) {
+        setTimeout(() => inputRef.current?.focus(), 150);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated]);
 
   // Tự ẩn tooltip sau 8 giây
   useEffect(() => {
@@ -86,6 +90,11 @@ export const FloatingChefAssistant: React.FC = () => {
   }, []);
 
   const handleSendMessage = async (queryToSend?: string) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
     const query = (queryToSend || inputText).trim();
     if (!query || isTyping) return;
 
@@ -146,6 +155,10 @@ export const FloatingChefAssistant: React.FC = () => {
   };
 
   const handleSuggestedDishClick = (dishName: string) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     handleSendMessage(`Hãy hướng dẫn tôi công thức chi tiết và các bước nấu món "${dishName}" nhé!`);
   };
 
@@ -368,6 +381,38 @@ export const FloatingChefAssistant: React.FC = () => {
               </div>
             )}
 
+            {/* THÔNG BÁO YÊU CẦU ĐĂNG NHẬP (UNAUTHENTICATED LOCK CARD) */}
+            {!isAuthenticated && (
+              <div className="my-2 p-4 rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50 to-orange-100/60 border border-orange-200/80 shadow-xs text-center space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-10 h-10 mx-auto rounded-full bg-orange-500/10 border border-orange-200 flex items-center justify-center text-orange-600 shadow-inner">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-xs sm:text-sm">
+                    Đăng nhập để trò chuyện với Đầu Bếp AI
+                  </h4>
+                  <p className="text-[11px] text-slate-600 leading-relaxed mt-1 max-w-[280px] mx-auto">
+                    Hỏi đáp công thức món ăn, tính toán calo và nhận gợi ý chuẩn khẩu vị theo tủ lạnh của bạn!
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-orange-500/25 transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Đăng Nhập</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-orange-50 border border-orange-200 text-orange-600 font-bold text-xs transition-all active:scale-95"
+                  >
+                    Tạo Tài Khoản
+                  </Link>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -377,53 +422,87 @@ export const FloatingChefAssistant: React.FC = () => {
             {DEFAULT_QUICK_PROMPTS.slice(0, 4).map((p) => (
               <button
                 key={p}
-                onClick={() => handleSendMessage(p)}
-                className="px-2.5 py-1 rounded-full bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-600 hover:text-orange-600 text-[10px] font-medium whitespace-nowrap transition-colors shadow-2xs shrink-0"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    navigate('/login');
+                    return;
+                  }
+                  handleSendMessage(p);
+                }}
+                className="px-2.5 py-1 rounded-full bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-600 hover:text-orange-600 text-[10px] font-medium whitespace-nowrap transition-colors shadow-2xs shrink-0 flex items-center gap-1"
               >
-                {p}
+                {!isAuthenticated && <Lock className="w-2.5 h-2.5 text-orange-400" />}
+                <span>{p}</span>
               </button>
             ))}
           </div>
 
-          {/* INPUT FORM GỬI TIN NHẮN */}
+          {/* INPUT FORM GỬI TIN NHẮN / KHÓA KHI CHƯA ĐĂNG NHẬP */}
           <div className="p-3 bg-white border-t border-orange-100">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="flex items-center gap-2"
-            >
-              <div className="relative flex-1">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Hỏi đầu bếp AI về món ăn, calo, mẹo nấu..."
-                  disabled={isTyping}
-                  className="w-full pl-3.5 pr-9 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-orange-500 focus:bg-white text-xs font-medium text-slate-800 focus:outline-none transition-all placeholder:text-slate-400 disabled:opacity-50"
-                />
-                {inputText && (
-                  <button
-                    type="button"
-                    onClick={() => setInputText('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            {!isAuthenticated ? (
+              <div className="flex items-center justify-between gap-2 p-2 px-3 rounded-2xl bg-orange-50/80 border border-orange-200/80">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[11px] sm:text-xs text-slate-700 font-medium truncate">
+                    Vui lòng đăng nhập để hỏi đáp
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Link
+                    to="/login"
+                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
                   >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-orange-50 border border-orange-200 text-orange-700 font-bold text-xs transition-all active:scale-95"
+                  >
+                    Đăng ký
+                  </Link>
+                </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={!inputText.trim() || isTyping}
-                className="w-10 h-10 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-40 text-white flex items-center justify-center transition-all duration-200 shadow-md shadow-orange-500/20 active:scale-95 shrink-0"
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="flex items-center gap-2"
               >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+                <div className="relative flex-1">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Hỏi đầu bếp AI về món ăn, calo, mẹo nấu..."
+                    disabled={isTyping}
+                    className="w-full pl-3.5 pr-9 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-orange-500 focus:bg-white text-xs font-medium text-slate-800 focus:outline-none transition-all placeholder:text-slate-400 disabled:opacity-50"
+                  />
+                  {inputText && (
+                    <button
+                      type="button"
+                      onClick={() => setInputText('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() || isTyping}
+                  className="w-10 h-10 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-40 text-white flex items-center justify-center transition-all duration-200 shadow-md shadow-orange-500/20 active:scale-95 shrink-0"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            )}
           </div>
 
         </div>
