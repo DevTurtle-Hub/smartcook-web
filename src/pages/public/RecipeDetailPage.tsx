@@ -28,6 +28,7 @@ import type { Recipe } from '../../types';
 import { UserHeader } from '../../components/user/UserHeader';
 import { richFallbackRecipes, type ExtendedRecipe } from './RecipeListPage';
 import { useCartStore } from '../../store/useCartStore';
+import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cookingHistoryApi } from '../../api/cookingHistory.api';
 import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupermarketsModal';
@@ -377,8 +378,9 @@ export const RecipeDetailPage: React.FC = () => {
               {/* Ảnh món ăn bo góc tròn mềm mại */}
               <div className="relative w-full aspect-square rounded-[20px] overflow-hidden bg-slate-100">
                 <img
-                  src={recipe.image}
+                  src={resolveRecipeImage(recipe.image, recipe.title || recipe.category)}
                   alt={recipe.title}
+                  onError={(e) => handleImageError(e, resolveRecipeImage(null, recipe.title || recipe.category))}
                   className="w-full h-full object-cover select-none"
                 />
 

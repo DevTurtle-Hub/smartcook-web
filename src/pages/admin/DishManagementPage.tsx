@@ -27,6 +27,7 @@ import {
 import { useAdminStore } from '../../store/useAdminStore';
 import type { DishRecipeAdmin, SystemIngredient } from '../../types/admin';
 import { recipeApi } from '../../api/recipe.api';
+import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
 
 export const DishManagementPage: React.FC = () => {
   const {
@@ -658,9 +659,11 @@ export const DishManagementPage: React.FC = () => {
                           <div className="flex items-center gap-3.5">
                             <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100 group-hover:border-indigo-300 transition-colors">
                               <img
-                                src={item.image}
+                                src={resolveRecipeImage(item.image, item.title || item.category)}
                                 alt={item.title}
+                                onError={(e) => handleImageError(e, resolveRecipeImage(null, item.title || item.category))}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
                               />
                             </div>
                             <div className="min-w-0">
@@ -944,9 +947,11 @@ export const DishManagementPage: React.FC = () => {
                   <div>
                     <div className="relative h-44 w-full overflow-hidden">
                       <img
-                        src={contrib.image}
+                        src={resolveRecipeImage(contrib.image, contrib.title)}
                         alt={contrib.title}
+                        onError={(e) => handleImageError(e, resolveRecipeImage(null, contrib.title))}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold">
                         Chờ duyệt
@@ -1018,9 +1023,11 @@ export const DishManagementPage: React.FC = () => {
             {/* Live Preview Card */}
             <div className="relative rounded-2xl overflow-hidden shadow-md border border-slate-200 group">
               <img
-                src={heroBanner.imageUrl}
+                src={resolveRecipeImage(heroBanner.imageUrl, heroBanner.title)}
                 alt={heroBanner.title}
+                onError={(e) => handleImageError(e, resolveRecipeImage(null, heroBanner.title))}
                 className="w-full h-72 object-cover"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6 text-white space-y-2">
                 <span className="px-2.5 py-1 bg-rose-600 text-[10px] font-extrabold uppercase tracking-wider rounded-lg self-start">
@@ -1048,7 +1055,13 @@ export const DishManagementPage: React.FC = () => {
                     className="p-2.5 rounded-xl bg-white border border-slate-200/80 flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <img src={r.image} alt={r.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      <img
+                        src={resolveRecipeImage(r.image, r.title || r.category)}
+                        alt={r.title}
+                        onError={(e) => handleImageError(e, resolveRecipeImage(null, r.title || r.category))}
+                        className="w-10 h-10 rounded-lg object-cover shrink-0"
+                        loading="lazy"
+                      />
                       <div className="min-w-0">
                         <h6 className="font-bold text-slate-900 truncate">{r.title}</h6>
                         <span className="text-[10px] text-slate-400">{r.category}</span>
@@ -1116,9 +1129,11 @@ export const DishManagementPage: React.FC = () => {
                 {/* Ảnh món ăn tỷ lệ điện ảnh với bo góc nhẹ rounded-lg */}
                 <div className="relative aspect-[16/10] w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs group">
                   <img
-                    src={viewingDish.image}
+                    src={resolveRecipeImage(viewingDish.image, viewingDish.title || viewingDish.category)}
                     alt={viewingDish.title}
+                    onError={(e) => handleImageError(e, resolveRecipeImage(null, viewingDish.title || viewingDish.category))}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                    loading="lazy"
                   />
                   <div className="absolute top-3 right-3 px-2.5 py-1 rounded bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-medium flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />

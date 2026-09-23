@@ -26,6 +26,7 @@ import { richFallbackRecipes, type ExtendedRecipe } from '../public/RecipeListPa
 import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupermarketsModal';
 import { useCartStore } from '../../store/useCartStore';
 import { fridgeApi, type FridgeItemDTO } from '../../api/fridge.api';
+import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
 
 // Danh sách các danh mục nguyên liệu thông dụng trong căn bếp Việt
 const INGREDIENT_CATEGORIES = [
@@ -517,9 +518,11 @@ export const MyKitchenPage: React.FC = () => {
                       {/* Ảnh món ăn */}
                       <div className="relative w-full sm:w-36 h-36 sm:h-36 rounded-2xl overflow-hidden shrink-0 bg-slate-100 shadow-inner group">
                         <img
-                          src={recipe.image}
+                          src={resolveRecipeImage(recipe.image, recipe.title || recipe.category)}
                           alt={recipe.title}
+                          onError={(e) => handleImageError(e, resolveRecipeImage(null, recipe.title || recipe.category))}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          loading="lazy"
                         />
                         {/* % Match Badge */}
                         <div

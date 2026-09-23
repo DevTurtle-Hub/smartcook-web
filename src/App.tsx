@@ -1,6 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './routes/AppRoutes';
+import { FloatingChefAssistant } from './components/ai/FloatingChefAssistant';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,6 +17,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AppRoutes />
+        <FloatingChefAssistant />
       </BrowserRouter>
     </QueryClientProvider>
   );
