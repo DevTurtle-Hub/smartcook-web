@@ -73,4 +73,24 @@ export const storeApi = {
       return null;
     }
   },
+
+  updateStore: async (id: string, data: Partial<StoreItem>): Promise<StoreItem | null> => {
+    try {
+      const res = await apiClient.put<ApiResponse<StoreItem>>(`/stores/${id}`, data);
+      return res.data.data;
+    } catch (err: any) {
+      console.warn('[SmartCook Web] updateStore error:', err.message);
+      return null;
+    }
+  },
+
+  deleteStore: async (id: string): Promise<boolean> => {
+    try {
+      await apiClient.delete(`/stores/${id}`);
+      return true;
+    } catch (err: any) {
+      console.warn('[SmartCook Web] deleteStore error:', err.message);
+      return false;
+    }
+  },
 };
