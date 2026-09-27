@@ -63,24 +63,45 @@ export interface Recipe {
   createdAt: string;
 }
 
+export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
+
 export interface Post {
   _id: string;
+  id?: string;
+  dishName?: string;
   author: {
     _id: string;
-    fullName: string;
+    id?: string;
+    fullName?: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
     avatar?: string;
+    level?: string;
+    badge?: string;
+    isChef?: boolean;
+    role?: string;
   };
   caption: string;
+  content?: string;
   images: Array<{
     url: string;
-    publicId: string;
+    publicId?: string;
   }>;
+  imageUrls?: string[];
+  recipeId?: {
+    _id: string;
+    title: string;
+    image?: string;
+  } | string;
   recipe?: {
     _id: string;
     title: string;
+    image?: string;
   };
   tags: string[];
-  reactionCounts: {
+  reactions?: Record<string, ReactionType>;
+  reactionCounts?: {
     like: number;
     love: number;
     haha: number;
@@ -88,10 +109,38 @@ export interface Post {
     sad: number;
     angry: number;
   };
-  totalReactions: number;
-  commentsCount: number;
-  sharesCount: number;
+  totalReactions?: number;
+  likesCount?: number;
+  isLiked?: boolean;
+  myReaction?: ReactionType | null;
+  commentsCount?: number;
+  sharesCount?: number;
+  isPinned?: boolean;
+  status?: 'published' | 'hidden' | 'flagged';
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PostComment {
+  _id: string;
+  id?: string;
+  postId: string;
+  author: {
+    _id: string;
+    id?: string;
+    fullName?: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    avatar?: string;
+    level?: string;
+    role?: string;
+  };
+  content: string;
+  parentComment?: string;
+  parentCommentId?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ApiResponse<T = any> {
