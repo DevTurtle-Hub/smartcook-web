@@ -7,27 +7,59 @@ import {
   Sparkles, 
   Heart, 
   MessageCircle, 
-  Bookmark,
-  MoreHorizontal,
-  X,
-  Smile,
-  Hash,
-  Utensils,
-  Plus,
-  Flame,
-  CheckCircle2,
-  Paperclip,
-  Check
+  Bookmark, 
+  MoreHorizontal, 
+  X, 
+  Smile, 
+  Hash, 
+  Utensils, 
+  Plus, 
+  Flame, 
+  CheckCircle2, 
+  Paperclip, 
+  Check,
+  Trash2,
+  Loader2,
+  Pin,
+  RefreshCw
 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useChatStore } from '../../store/useChatStore';
-import type { Post, Recipe } from '../../types';
+import type { Post, Recipe, ReactionType } from '../../types';
 import { UserHeader } from '../../components/user/UserHeader';
 import { recipeApi } from '../../api/recipe.api';
+import { communityApi } from '../../api/community.api';
+
+// Format relative time helper
+const formatRelativeTime = (dateString?: string) => {
+  if (!dateString) return 'Vừa xong';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+
+  const now = new Date();
+  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffSec < 60) return 'Vừa xong';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} giờ trước`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 7) return `${diffDay} ngày trước`;
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
 export const CommunityPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { startChatWithUser } = useChatStore();
+  const navigate = useNavigate();
+
+  // Posts Feed State
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState<boolean>(true);
+  const [postError, setPostError] = useState<string | null>(null);
+  const [selectedTopicTag, setSelectedTopicTag] = useState<string>('all');
   
   // Post Creator State
   const [newPostCaption, setNewPostCaption] = useState('');
@@ -49,15 +81,8 @@ export const CommunityPage: React.FC = () => {
   // Feed interactions
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [postComments, setPostComments] = useState<Record<string, Array<{ author: string; text: string; time: string; avatar?: string }>>>({
-    'post-1': [
-      { author: 'Lê Tuấn Hưng', text: 'Nhìn màu thịt kho đẹp mê ly luôn bạn ơi, nước dừa xiêm nấu ra màu cánh gián tự nhiên đỉnh thật!', time: '1 giờ trước' },
-      { author: 'Hoàng Kim', text: 'Bật app lên nấu theo từng bước tiện cực kỳ, không sợ cháy nồi luôn.', time: '30 phút trước' }
-    ],
-    'post-2': [
-      { author: 'Trần Bình', text: 'Scan AI chuẩn thật, bữa mình scan tủ cũng ra ngay món này ăn đỡ ngán hẳn.', time: '2 giờ trước' }
-    ]
-  });
+  const [postComments, setPostComments] = useState<Record<string, Array<{ id?: string; author: string; authorId?: string; text: string; time: string; avatar?: string }>>>({});
+  const [isLoadingComments, setIsLoadingComments] = useState<Record<string, boolean>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +101,30 @@ export const CommunityPage: React.FC = () => {
 
   // Quick emojis to insert into text
   const quickEmojis = ['😋', '👨‍🍳', '🥘', '🍲', '🥩', '🥗', '🔥', '✨', '❤️', '🤤', '👏', '👌'];
+
+  // Fetch real posts from backend
+  const fetchPosts = async (tag?: string) => {
+    setIsLoadingPosts(true);
+    setPostError(null);
+    try {
+      const data = await communityApi.getPosts({
+        tag: tag && tag !== 'all' ? tag : undefined,
+        limit: 30,
+      });
+      if (data && data.posts) {
+        setPosts(data.posts);
+      }
+    } catch (err: any) {
+      console.error('Lỗi khi tải bài viết cộng đồng:', err);
+      setPostError('Không thể tải bài viết cộng đồng. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts(selectedTopicTag);
+  }, [selectedTopicTag]);
 
   // Load recipes for attaching
   useEffect(() => {
@@ -140,60 +189,6 @@ export const CommunityPage: React.FC = () => {
     setNewPostCaption((prev) => prev + emoji);
   };
 
-  // Sample community posts with reactions
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      _id: 'post-1',
-      author: {
-        _id: 'u1',
-        fullName: 'Nguyễn Thị Mai',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      },
-      caption: 'Lần đầu nấu món Thịt kho tàu theo công thức trên SmartCook! Quả thực thơm nức mũi cả xóm, nước dừa sóng sánh màu cánh gián cực kỳ chuẩn bài luôn ạ 🥰 Cả nhà ai cũng khen!',
-      images: [
-        {
-          url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
-          publicId: 'img1',
-        },
-      ],
-      recipe: {
-        _id: 'seed-1',
-        title: 'Thịt Kho Tàu Trứng Cút Nước Dừa',
-      },
-      tags: ['thitkhotau', 'monngonmoingay', 'smartcook'],
-      reactionCounts: { like: 24, love: 52, haha: 2, wow: 18, sad: 0, angry: 0 },
-      totalReactions: 96,
-      commentsCount: 14,
-      sharesCount: 5,
-      createdAt: '2 giờ trước',
-    },
-    {
-      _id: 'post-2',
-      author: {
-        _id: 'u2',
-        fullName: 'Trần Văn Hoàng',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      },
-      caption: 'Nay thử tính năng Quét AI tủ lạnh trên app, tủ còn đúng miếng ức gà với củ hành tây mà gợi ý ngay món Ức gà sốt bơ tỏi này. Nấu mất đúng 15p, chuẩn vị healthy cho anh em gymer nhé!',
-      images: [
-        {
-          url: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800&auto=format&fit=crop&q=80',
-          publicId: 'img2',
-        },
-      ],
-      recipe: {
-        _id: 'seed-3',
-        title: 'Ức Gà Áp Chảo Sốt Bơ Tỏi Mật Ong',
-      },
-      tags: ['healthy', 'eatclean', 'aiscanner'],
-      reactionCounts: { like: 45, love: 31, haha: 8, wow: 12, sad: 0, angry: 0 },
-      totalReactions: 96,
-      commentsCount: 9,
-      sharesCount: 3,
-      createdAt: '5 giờ trước',
-    },
-  ]);
-
   const reactionEmojis = [
     { type: 'like', emoji: '👍', label: 'Thích' },
     { type: 'love', emoji: '❤️', label: 'Yêu thích' },
@@ -203,62 +198,82 @@ export const CommunityPage: React.FC = () => {
     { type: 'angry', emoji: '😡', label: 'Giận' },
   ];
 
-  const handleReact = (postId: string, type: 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry') => {
+  // Real React handler with optimistic UI update
+  const handleReact = async (postId: string, type: ReactionType) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
     setPosts((prev) =>
       prev.map((p) => {
         if (p._id !== postId) return p;
+        const currentReactions = p.reactionCounts || { like: 0, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
+        const hasReactedSame = p.myReaction === type;
+        const newReaction = hasReactedSame ? null : type;
+        const countDiff = hasReactedSame ? -1 : (p.myReaction ? 0 : 1);
+
         return {
           ...p,
+          isLiked: newReaction !== null,
+          myReaction: newReaction,
+          totalReactions: Math.max(0, (p.totalReactions || 0) + countDiff),
           reactionCounts: {
-            ...p.reactionCounts,
-            [type]: p.reactionCounts[type] + 1,
-          },
-          totalReactions: p.totalReactions + 1,
+            ...currentReactions,
+            [type]: Math.max(0, (currentReactions[type] || 0) + (hasReactedSame ? -1 : 1)),
+            ...(p.myReaction && p.myReaction !== type ? {
+              [p.myReaction]: Math.max(0, (currentReactions[p.myReaction] || 0) - 1)
+            } : {})
+          }
         };
       })
     );
+
+    try {
+      const updatedPost = await communityApi.reactPost(postId, type);
+      if (updatedPost) {
+        setPosts((prev) => prev.map((p) => (p._id === postId ? updatedPost : p)));
+      }
+    } catch (err) {
+      console.error('Lỗi khi thả cảm xúc:', err);
+    }
   };
 
-  const handleCreatePost = (e?: React.FormEvent) => {
+  // Real Create Post handler uploading to backend + Cloudinary
+  const handleCreatePost = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     if (!newPostCaption.trim() && selectedImages.length === 0) return;
 
     setIsPublishing(true);
 
-    setTimeout(() => {
-      // Default placeholder image if none selected
-      const finalImages = selectedImages.length > 0 
-        ? selectedImages.map((img, idx) => ({ url: img.url, publicId: `img-${Date.now()}-${idx}` }))
-        : [
-            {
-              url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&auto=format&fit=crop&q=80',
-              publicId: `img-${Date.now()}`
-            }
-          ];
-
+    try {
       const fullCaption = selectedMood 
         ? `${selectedMood.emoji} Cảm thấy ${selectedMood.label.toLowerCase()}:\n${newPostCaption}`
         : newPostCaption;
 
-      const newPost: Post = {
-        _id: `post-${Date.now()}`,
-        author: {
-          _id: user?._id || 'user-current',
-          fullName: user?.fullName || `${user?.lastName || ''} ${user?.firstName || 'Bếp Trưởng'}`.trim(),
-          avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-        },
-        caption: fullCaption,
-        images: finalImages,
-        recipe: selectedRecipe ? { _id: selectedRecipe._id, title: selectedRecipe.title } : undefined,
-        tags: selectedTags,
-        reactionCounts: { like: 1, love: 1, haha: 0, wow: 0, sad: 0, angry: 0 },
-        totalReactions: 2,
-        commentsCount: 0,
-        sharesCount: 0,
-        createdAt: 'Vừa xong',
-      };
+      const formData = new FormData();
+      formData.append('caption', fullCaption);
+      if (selectedRecipe) {
+        formData.append('recipeId', selectedRecipe._id);
+        formData.append('dishName', selectedRecipe.title);
+      }
+      if (selectedTags.length > 0) {
+        formData.append('tags', selectedTags.join(','));
+      }
 
-      setPosts([newPost, ...posts]);
+      // Append image files
+      selectedImages.forEach((img) => {
+        if (img.file) {
+          formData.append('images', img.file);
+        }
+      });
+
+      const newPost = await communityApi.createPost(formData);
+      setPosts((prev) => [newPost, ...prev]);
       
       // Reset form
       setNewPostCaption('');
@@ -266,31 +281,94 @@ export const CommunityPage: React.FC = () => {
       setSelectedRecipe(null);
       setSelectedMood(null);
       setSelectedTags(['smartcook', 'yeubep']);
+      alert('🎉 Đăng bài viết cộng đồng thành công! Bạn nhận được +20 XP Đầu Bếp.');
+    } catch (err: any) {
+      console.error('Lỗi khi đăng bài:', err);
+      alert(err.response?.data?.message || 'Đăng bài viết thất bại. Vui lòng thử lại!');
+    } finally {
       setIsPublishing(false);
-    }, 400);
+    }
   };
 
-  const handleSendComment = (postId: string) => {
+  // Toggle and fetch comments
+  const handleToggleComments = async (postId: string) => {
+    if (activeCommentPostId === postId) {
+      setActiveCommentPostId(null);
+      return;
+    }
+
+    setActiveCommentPostId(postId);
+
+    if (!postComments[postId]) {
+      setIsLoadingComments((prev) => ({ ...prev, [postId]: true }));
+      try {
+        const res = await communityApi.getComments(postId);
+        if (res && res.comments) {
+          const formatted = res.comments.map((c) => ({
+            id: c._id,
+            author: c.author?.fullName || `${c.author?.firstName || ''} ${c.author?.lastName || ''}`.trim() || 'Thành viên SmartCook',
+            authorId: c.author?._id || c.author?.id,
+            text: c.content,
+            time: formatRelativeTime(c.createdAt),
+            avatar: c.author?.avatar,
+          }));
+          setPostComments((prev) => ({ ...prev, [postId]: formatted }));
+        }
+      } catch (err) {
+        console.warn('Lỗi khi tải bình luận:', err);
+      } finally {
+        setIsLoadingComments((prev) => ({ ...prev, [postId]: false }));
+      }
+    }
+  };
+
+  // Real Add Comment handler
+  const handleSendComment = async (postId: string) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     const text = commentInputs[postId]?.trim();
     if (!text) return;
 
-    const newComment = {
-      author: user?.fullName || `${user?.lastName || ''} ${user?.firstName || 'Bạn'}`.trim(),
-      text,
-      time: 'Vừa xong',
-      avatar: user?.avatar
-    };
+    try {
+      const newComment = await communityApi.addComment(postId, text);
+      const formatted = {
+        id: newComment._id,
+        author: newComment.author?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Bạn',
+        authorId: user?._id,
+        text: newComment.content,
+        time: 'Vừa xong',
+        avatar: user?.avatar,
+      };
 
-    setPostComments((prev) => ({
-      ...prev,
-      [postId]: [...(prev[postId] || []), newComment]
-    }));
+      setPostComments((prev) => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), formatted],
+      }));
 
-    setPosts((prev) =>
-      prev.map((p) => (p._id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p))
-    );
+      setPosts((prev) =>
+        prev.map((p) => (p._id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p))
+      );
 
-    setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+      setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+    } catch (err: any) {
+      console.error('Lỗi khi gửi bình luận:', err);
+      alert('Không thể gửi bình luận. Vui lòng thử lại!');
+    }
+  };
+
+  // Delete Post handler
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xoá bài viết này không?')) return;
+    try {
+      await communityApi.deletePost(postId);
+      setPosts((prev) => prev.filter((p) => p._id !== postId));
+      alert('Đã xoá bài viết thành công!');
+    } catch (err: any) {
+      console.error('Lỗi khi xoá bài viết:', err);
+      alert(err.response?.data?.message || 'Không thể xoá bài viết!');
+    }
   };
 
   const filteredRecipes = availableRecipes.filter((r) => 
@@ -751,268 +829,416 @@ export const CommunityPage: React.FC = () => {
           </div>
         )}
 
-        {/* Feed List - Phong cách Culinary Magazine & Bếp Hiện Đại */}
-        <div className="space-y-8">
-          {posts.map((post) => (
-            <article 
-              key={post._id} 
-              className="bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-300 border border-amber-100/70 overflow-hidden flex flex-col group"
+        {/* Topic Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {[
+            { id: 'all', label: 'Tất cả' },
+            { id: 'monngonmoingay', label: '🍜 Món Ngon Mỗi Ngày' },
+            { id: 'eatclean', label: '🥗 Eat Clean' },
+            { id: 'bepgiadinh', label: '🍲 Bếp Gia Đình' },
+            { id: 'nauanthoathich', label: '🧁 Nấu Ăn Thoả Thích' },
+            { id: 'aiscan', label: '🤖 AI Bếp' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedTopicTag(tab.id)}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap transition-all shadow-xs border ${
+                selectedTopicTag === tab.id
+                  ? 'bg-orange-500 text-white border-orange-500 shadow-orange-500/20'
+                  : 'bg-white text-slate-600 border-orange-100 hover:border-orange-300 hover:text-orange-600'
+              }`}
             >
-              {/* Media Image Showcase Đặt Lên Hàng Đầu Phong Cách Tạp Chí Ẩm Thực */}
-              {post.images && post.images.length > 0 && (
-                <div className="relative overflow-hidden bg-slate-100 max-h-[500px]">
-                  {post.images.length === 1 ? (
-                    <div className="w-full h-full overflow-hidden">
-                      <img 
-                        src={post.images[0].url} 
-                        alt="Culinary Creation" 
-                        className="w-full max-h-[480px] object-cover object-center group-hover:scale-[1.02] transition-transform duration-500" 
-                      />
-                    </div>
-                  ) : post.images.length === 2 ? (
-                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-amber-50/50">
-                      {post.images.map((img, i) => (
-                        <div key={i} className="aspect-4/3 overflow-hidden rounded-2xl">
-                          <img src={img.url} alt={`Creation ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              {tab.label}
+            </button>
+          ))}
+          <button
+            onClick={() => fetchPosts(selectedTopicTag)}
+            className="p-2 rounded-2xl bg-white border border-orange-100 text-slate-500 hover:text-orange-600 hover:border-orange-300 transition-colors ml-auto shrink-0 shadow-xs"
+            title="Làm mới bài viết"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoadingPosts ? 'animate-spin text-orange-500' : ''}`} />
+          </button>
+        </div>
+
+        {/* Feed List - Phong cách Culinary Magazine & Bếp Hiện Đại */}
+        {isLoadingPosts ? (
+          <div className="space-y-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-[2.5rem] p-6 border border-orange-100/70 shadow-sm animate-pulse space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-slate-200 rounded-2xl" />
+                  <div className="space-y-2 flex-1">
+                    <div className="w-32 h-3.5 bg-slate-200 rounded-md" />
+                    <div className="w-20 h-2.5 bg-slate-100 rounded-md" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="w-full h-3 bg-slate-200 rounded-md" />
+                  <div className="w-3/4 h-3 bg-slate-100 rounded-md" />
+                </div>
+                <div className="w-full h-56 bg-slate-100 rounded-2xl" />
+              </div>
+            ))}
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="bg-white rounded-[2.5rem] p-12 text-center border border-dashed border-orange-200 space-y-3 shadow-xs">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center mx-auto text-2xl font-black">
+              🍳
+            </div>
+            <h3 className="font-extrabold text-base text-slate-800">Chưa có bài viết nào ở chủ đề này</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Hãy trở thành người đầu tiên chia sẻ món ngon và kinh nghiệm bếp núc với cộng đồng SmartCook!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {posts.map((post) => {
+              const authorName = post.author?.fullName || `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim() || 'Đầu bếp SmartCook';
+              const authorAvatar = post.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
+              const isMyPost = user?._id === post.author?._id || (user as any)?.role === 'admin';
+              const activeReaction = reactionEmojis.find((r) => r.type === post.myReaction);
+
+              return (
+                <article 
+                  key={post._id} 
+                  className="bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-300 border border-amber-100/70 overflow-hidden flex flex-col group"
+                >
+                  {/* Media Image Showcase Đặt Lên Hàng Đầu Phong Cách Tạp Chí Ẩm Thực */}
+                  {post.images && post.images.length > 0 && (
+                    <div className="relative overflow-hidden bg-slate-100 max-h-[500px]">
+                      {post.images.length === 1 ? (
+                        <div className="w-full h-full overflow-hidden">
+                          <img 
+                            src={post.images[0].url} 
+                            alt="Culinary Creation" 
+                            className="w-full max-h-[480px] object-cover object-center group-hover:scale-[1.02] transition-transform duration-500" 
+                          />
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-amber-50/50">
-                      {post.images.slice(0, 3).map((img, i) => (
-                        <div key={i} className="relative aspect-square overflow-hidden rounded-2xl">
-                          <img src={img.url} alt={`Creation ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          {i === 2 && post.images.length > 3 && (
-                            <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center text-white font-black text-lg">
-                              +{post.images.length - 3}
+                      ) : post.images.length === 2 ? (
+                        <div className="grid grid-cols-2 gap-1.5 p-1 bg-amber-50/50">
+                          {post.images.map((img, i) => (
+                            <div key={i} className="aspect-4/3 overflow-hidden rounded-2xl">
+                              <img src={img.url} alt={`Creation ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <div className="grid grid-cols-3 gap-1.5 p-1 bg-amber-50/50">
+                          {post.images.slice(0, 3).map((img, i) => (
+                            <div key={i} className="relative aspect-square overflow-hidden rounded-2xl">
+                              <img src={img.url} alt={`Creation ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              {i === 2 && post.images.length > 3 && (
+                                <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center text-white font-black text-lg">
+                                  +{post.images.length - 3}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Ghim bài */}
+                      {post.isPinned && (
+                        <div className="absolute top-4 right-14 bg-amber-500 text-white backdrop-blur-md rounded-xl px-2.5 py-1 text-[11px] font-bold shadow-md flex items-center gap-1 z-10">
+                          <Pin className="w-3 h-3 fill-white" />
+                          <span>Được ghim</span>
+                        </div>
+                      )}
+
+                      {/* Floating Chef Badge trên góc ảnh */}
+                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md rounded-2xl px-3 py-2 shadow-md flex items-center gap-3 border border-white/80">
+                        <img
+                          src={authorAvatar}
+                          alt={authorName}
+                          className="w-8 h-8 rounded-xl object-cover ring-2 ring-orange-400"
+                        />
+                        <div>
+                          <h4 className="font-extrabold text-xs text-slate-800 tracking-tight leading-tight">
+                            {authorName}
+                          </h4>
+                          <p className="text-[10px] text-slate-400 font-medium">{formatRelativeTime(post.createdAt)}</p>
+                        </div>
+
+                        {/* Nút Nhắn tin cho chủ bài đăng */}
+                        {user?._id !== post.author?._id && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startChatWithUser({
+                                id: post.author?._id || '',
+                                name: authorName,
+                                avatar: authorAvatar,
+                                role: 'Chủ Bài Đăng'
+                              });
+                            }}
+                            className="ml-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[11px] font-bold shadow-xs hover:scale-105 active:scale-95 transition-all"
+                            title={`Nhắn tin trực tiếp với ${authorName}`}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Nhắn tin</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Author delete button */}
+                      {isMyPost && (
+                        <button
+                          onClick={() => handleDeletePost(post._id)}
+                          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/80 hover:bg-rose-50 text-slate-500 hover:text-rose-600 backdrop-blur-md flex items-center justify-center shadow-md transition-all"
+                          title="Xoá bài viết"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   )}
 
-                  {/* Floating Chef Badge trên góc ảnh */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md rounded-2xl px-3 py-2 shadow-md flex items-center gap-3 border border-white/80">
-                    <img
-                      src={post.author.avatar}
-                      alt={post.author.fullName}
-                      className="w-8 h-8 rounded-xl object-cover ring-2 ring-orange-400"
-                    />
-                    <div>
-                      <h4 className="font-extrabold text-xs text-slate-800 tracking-tight leading-tight">
-                        {post.author.fullName}
-                      </h4>
-                      <p className="text-[10px] text-slate-400 font-medium">{post.createdAt}</p>
-                    </div>
-
-                    {/* Nút Nhắn tin cho chủ bài đăng */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startChatWithUser({
-                          id: post.author._id,
-                          name: post.author.fullName,
-                          avatar: post.author.avatar,
-                          role: 'Chủ Bài Đăng'
-                        });
-                      }}
-                      className="ml-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[11px] font-bold shadow-xs hover:scale-105 active:scale-95 transition-all"
-                      title={`Nhắn tin trực tiếp với ${post.author.fullName}`}
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Nhắn tin</span>
-                    </button>
-                  </div>
-
-                  {/* More options button */}
-                  <button className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/80 hover:bg-white backdrop-blur-md text-slate-600 flex items-center justify-center shadow-md transition-all">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              {/* Nếu không có ảnh thì hiển thị tác giả phong cách card nhẹ nhàng */}
-              {(!post.images || post.images.length === 0) && (
-                <div className="p-6 pb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={post.author.avatar}
-                      alt={post.author.fullName}
-                      className="w-10 h-10 rounded-2xl object-cover ring-2 ring-orange-200"
-                    />
-                    <div>
-                      <h4 className="font-extrabold text-sm text-slate-800">
-                        {post.author.fullName}
-                      </h4>
-                      <span className="text-[11px] text-slate-400 font-medium">{post.createdAt}</span>
-                    </div>
-
-                    {/* Nút Nhắn tin cho tác giả bài viết */}
-                    <button
-                      type="button"
-                      onClick={() => startChatWithUser({
-                        id: post.author._id,
-                        name: post.author.fullName,
-                        avatar: post.author.avatar,
-                        role: 'Chủ Bài Đăng'
-                      })}
-                      className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200/80 transition-all active:scale-95"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5 text-orange-600" />
-                      <span>Nhắn tin</span>
-                    </button>
-                  </div>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Story & Nội dung cảm nhận ẩm thực */}
-              <div className="p-6 pt-5 space-y-3.5">
-                <p className="text-sm sm:text-[15px] text-slate-800 font-normal leading-relaxed whitespace-pre-line tracking-tight">
-                  {post.caption}
-                </p>
-
-                {/* Hashtag Pills phong cách Pinterest/Instagram Foodie */}
-                {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {post.tags.map((tag) => (
-                      <span 
-                        key={tag} 
-                        className="px-3 py-1 rounded-full bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold transition-colors cursor-pointer border border-orange-200/50"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Modern Aesthetic Interaction Bar */}
-              <div className="px-6 py-4 bg-slate-50/60 border-t border-amber-50/80 flex items-center justify-between">
-                
-                {/* Floating Reaction Pill */}
-                <div className="relative group flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-slate-200/70 shadow-xs">
-                  <button 
-                    type="button" 
-                    onClick={() => handleReact(post._id, 'love')}
-                    className="flex items-center gap-1.5 text-xs font-extrabold text-rose-600 hover:scale-110 transition-transform"
-                  >
-                    <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-                    <span>{post.totalReactions}</span>
-                  </button>
-
-                  {/* Reaction Popover */}
-                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex items-center gap-1.5 bg-white p-2 rounded-2xl shadow-xl border border-orange-100 animate-in fade-in zoom-in-95 z-30">
-                    {reactionEmojis.map((emoji) => (
-                      <button
-                        key={emoji.type}
-                        onClick={() => handleReact(post._id, emoji.type as any)}
-                        title={emoji.label}
-                        className="text-xl p-1 hover:scale-130 transition-transform"
-                      >
-                        {emoji.emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Right side actions: Comment & Share */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveCommentPostId(activeCommentPostId === post._id ? null : post._id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border ${
-                      activeCommentPostId === post._id
-                        ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/30'
-                        : 'bg-white text-slate-600 border-slate-200/70 hover:border-orange-200 hover:text-orange-600 shadow-xs'
-                    }`}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>{post.commentsCount} Thảo luận</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(window.location.href);
-                      alert("Đã sao chép liên kết bài viết!");
-                    }}
-                    className="p-2 rounded-2xl bg-white text-slate-500 hover:text-orange-600 border border-slate-200/70 hover:border-orange-200 shadow-xs transition-colors"
-                    title="Chia sẻ bài viết"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* COMMENTS SECTION - Thiết kế dạng hội thoại ẩm thực gọn gàng */}
-              {(activeCommentPostId === post._id || (postComments[post._id] && postComments[post._id].length > 0)) && (
-                <div className="bg-[#fffdfa] p-5 sm:p-6 border-t border-amber-100/60 space-y-4">
-                  {/* Danh sách bình luận */}
-                  <div className="space-y-3">
-                    {(postComments[post._id] || []).map((c, idx) => (
-                      <div key={idx} className="flex gap-3 items-start group/comment">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-400 to-amber-300 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
-                          {c.author.slice(0, 1)}
-                        </div>
-                        <div className="bg-white rounded-2xl p-3 px-4 border border-amber-100/90 text-xs shadow-xs flex-1 space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-slate-800">{c.author}</span>
-                              <span className="text-[10px] text-slate-400">{c.time}</span>
-                            </div>
-
-                            {/* Nút Nhắn tin cho chủ bình luận */}
-                            <button
-                              type="button"
-                              onClick={() => startChatWithUser({
-                                id: `comment-author-${idx}`,
-                                name: c.author,
-                                avatar: c.avatar,
-                                role: 'Thành Viên Bình Luận'
-                              })}
-                              className="opacity-0 group-hover/comment:opacity-100 inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 py-0.5 rounded-lg transition-all"
-                              title={`Nhắn tin với ${c.author}`}
-                            >
-                              <MessageCircle className="w-3 h-3" />
-                              <span>Nhắn tin</span>
-                            </button>
+                  {/* Nếu không có ảnh thì hiển thị tác giả phong cách card nhẹ nhàng */}
+                  {(!post.images || post.images.length === 0) && (
+                    <div className="p-6 pb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={authorAvatar}
+                          alt={authorName}
+                          className="w-10 h-10 rounded-2xl object-cover ring-2 ring-orange-200"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-extrabold text-sm text-slate-800">
+                              {authorName}
+                            </h4>
+                            {post.isPinned && (
+                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-100 text-amber-800 rounded-md text-[10px] font-extrabold">
+                                <Pin className="w-2.5 h-2.5 fill-amber-700" /> Ghim
+                              </span>
+                            )}
                           </div>
-                          <p className="text-slate-600 text-xs leading-relaxed">{c.text}</p>
+                          <span className="text-[11px] text-slate-400 font-medium">{formatRelativeTime(post.createdAt)}</span>
                         </div>
+
+                        {/* Nút Nhắn tin cho tác giả bài viết */}
+                        {user?._id !== post.author?._id && (
+                          <button
+                            type="button"
+                            onClick={() => startChatWithUser({
+                              id: post.author?._id || '',
+                              name: authorName,
+                              avatar: authorAvatar,
+                              role: 'Chủ Bài Đăng'
+                            })}
+                            className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200/80 transition-all active:scale-95"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-orange-600" />
+                            <span>Nhắn tin</span>
+                          </button>
+                        )}
                       </div>
-                    ))}
+
+                      {isMyPost && (
+                        <button
+                          onClick={() => handleDeletePost(post._id)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                          title="Xoá bài viết"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Story & Nội dung cảm nhận ẩm thực */}
+                  <div className="p-6 pt-5 space-y-3.5">
+                    <p className="text-sm sm:text-[15px] text-slate-800 font-normal leading-relaxed whitespace-pre-line tracking-tight">
+                      {post.caption}
+                    </p>
+
+                    {/* Món ăn gắn kèm (Linked Recipe Card) */}
+                    {(post.dishName || post.recipeId) && (
+                      <div className="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200/80 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center font-black text-lg shadow-2xs shrink-0">
+                            🍲
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600">Công Thức Món Ăn</span>
+                            <h4 className="font-extrabold text-xs sm:text-sm text-slate-800">{post.dishName || 'Món ngon SmartCook'}</h4>
+                          </div>
+                        </div>
+
+                        {post.recipeId && (
+                          <Link
+                            to={`/recipe/${typeof post.recipeId === 'string' ? post.recipeId : (post.recipeId as any)._id}`}
+                            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-bold border border-orange-200 shadow-2xs transition-all shrink-0"
+                          >
+                            Xem cách nấu
+                          </Link>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Hashtag Pills phong cách Pinterest/Instagram Foodie */}
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {post.tags.map((tag) => (
+                          <span 
+                            key={tag} 
+                            onClick={() => setSelectedTopicTag(tag)}
+                            className="px-3 py-1 rounded-full bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold transition-colors cursor-pointer border border-orange-200/50"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Input gửi bình luận */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <input
-                      type="text"
-                      placeholder={isAuthenticated ? "Góp ý hoặc hỏi bí quyết nấu nướng..." : "Đăng nhập để tham gia thảo luận..."}
-                      disabled={!isAuthenticated}
-                      value={commentInputs[post._id] || ''}
-                      onChange={(e) => setCommentInputs({ ...commentInputs, [post._id]: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSendComment(post._id);
-                      }}
-                      className="flex-1 bg-white rounded-2xl px-4 py-2.5 text-xs sm:text-sm border border-orange-200/80 focus:outline-none focus:ring-2 focus:ring-orange-500/20 placeholder-slate-400 shadow-inner"
-                    />
-                    <button
-                      onClick={() => handleSendComment(post._id)}
-                      disabled={!isAuthenticated || !commentInputs[post._id]?.trim()}
-                      className="px-4 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-orange-500/25 active:scale-95"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Gửi</span>
-                    </button>
+                  {/* Modern Aesthetic Interaction Bar */}
+                  <div className="px-6 py-4 bg-slate-50/60 border-t border-amber-50/80 flex items-center justify-between">
+                    
+                    {/* Floating Reaction Pill */}
+                    <div className="relative group flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-slate-200/70 shadow-xs">
+                      <button 
+                        type="button" 
+                        onClick={() => handleReact(post._id, post.myReaction || 'like')}
+                        className={`flex items-center gap-1.5 text-xs font-extrabold transition-transform ${
+                          post.myReaction ? 'text-orange-600 scale-105' : 'text-slate-600 hover:text-orange-600'
+                        }`}
+                      >
+                        {activeReaction ? (
+                          <span className="text-base">{activeReaction.emoji}</span>
+                        ) : (
+                          <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                        )}
+                        <span>{post.totalReactions || 0}</span>
+                      </button>
+
+                      {/* Reaction Popover */}
+                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex items-center gap-1.5 bg-white p-2 rounded-2xl shadow-xl border border-orange-100 animate-in fade-in zoom-in-95 z-30">
+                        {reactionEmojis.map((emoji) => (
+                          <button
+                            key={emoji.type}
+                            onClick={() => handleReact(post._id, emoji.type as any)}
+                            title={emoji.label}
+                            className={`text-xl p-1 hover:scale-130 transition-transform ${
+                              post.myReaction === emoji.type ? 'scale-120 drop-shadow-sm' : ''
+                            }`}
+                          >
+                            {emoji.emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right side actions: Comment & Share */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleComments(post._id)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border ${
+                          activeCommentPostId === post._id
+                            ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/30'
+                            : 'bg-white text-slate-600 border-slate-200/70 hover:border-orange-200 hover:text-orange-600 shadow-xs'
+                        }`}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{post.commentsCount || 0} Thảo luận</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(window.location.href);
+                          alert("Đã sao chép liên kết bài viết!");
+                        }}
+                        className="p-2 rounded-2xl bg-white text-slate-500 hover:text-orange-600 border border-slate-200/70 hover:border-orange-200 shadow-xs transition-colors"
+                        title="Chia sẻ bài viết"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
+
+                  {/* COMMENTS SECTION - Thiết kế dạng hội thoại ẩm thực gọn gàng */}
+                  {(activeCommentPostId === post._id || (postComments[post._id] && postComments[post._id].length > 0)) && (
+                    <div className="bg-[#fffdfa] p-5 sm:p-6 border-t border-amber-100/60 space-y-4">
+                      {/* Loading comments spinner */}
+                      {isLoadingComments[post._id] && (
+                        <div className="py-4 text-center">
+                          <Loader2 className="w-5 h-5 text-orange-500 animate-spin mx-auto" />
+                          <span className="text-[11px] text-slate-400 mt-1 block">Đang tải thảo luận...</span>
+                        </div>
+                      )}
+
+                      {/* Danh sách bình luận */}
+                      <div className="space-y-3">
+                        {(postComments[post._id] || []).map((c, idx) => (
+                          <div key={idx} className="flex gap-3 items-start group/comment">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-400 to-amber-300 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0 overflow-hidden">
+                              {c.avatar ? (
+                                <img src={c.avatar} alt={c.author} className="w-full h-full object-cover" />
+                              ) : (
+                                c.author.slice(0, 1)
+                              )}
+                            </div>
+                            <div className="bg-white rounded-2xl p-3 px-4 border border-amber-100/90 text-xs shadow-xs flex-1 space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-slate-800">{c.author}</span>
+                                  <span className="text-[10px] text-slate-400">{c.time}</span>
+                                </div>
+
+                                {/* Nút Nhắn tin cho chủ bình luận */}
+                                {user?._id !== c.authorId && (
+                                  <button
+                                    type="button"
+                                    onClick={() => startChatWithUser({
+                                      id: c.authorId || `comment-author-${idx}`,
+                                      name: c.author,
+                                      avatar: c.avatar,
+                                      role: 'Thành Viên Bình Luận'
+                                    })}
+                                    className="opacity-0 group-hover/comment:opacity-100 inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 py-0.5 rounded-lg transition-all"
+                                    title={`Nhắn tin với ${c.author}`}
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span>Nhắn tin</span>
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-slate-600 text-xs leading-relaxed">{c.text}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Input gửi bình luận */}
+                      <div className="flex items-center gap-2 pt-2">
+                        <input
+                          type="text"
+                          placeholder={isAuthenticated ? "Góp ý hoặc hỏi bí quyết nấu nướng..." : "Đăng nhập để tham gia thảo luận..."}
+                          disabled={!isAuthenticated}
+                          value={commentInputs[post._id] || ''}
+                          onChange={(e) => setCommentInputs({ ...commentInputs, [post._id]: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSendComment(post._id);
+                          }}
+                          className="flex-1 bg-white rounded-2xl px-4 py-2.5 text-xs sm:text-sm border border-orange-200/80 focus:outline-none focus:ring-2 focus:ring-orange-500/20 placeholder-slate-400 shadow-inner"
+                        />
+                        <button
+                          onClick={() => handleSendComment(post._id)}
+                          disabled={!isAuthenticated || !commentInputs[post._id]?.trim()}
+                          className="px-4 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-orange-500/25 active:scale-95"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Gửi</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
 
       </div>
     </div>
