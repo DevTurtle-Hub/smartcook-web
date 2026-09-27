@@ -837,24 +837,36 @@ graph TD
 
 #### GIAI ĐOẠN 3: MODULE CHUỖI SIÊU THỊ GPS & GIỎ ĐI CHỢ THÔNG MINH
 > **Trạng Thái**: 
-> - 🟢 **Backend**: Đã có Model `Store.ts` (GeoJSON Point, index 2dsphere) và route `/api/v1/stores/nearby`, `/api/v1/stores`.
-> - 🟢 **Frontend**: Đã có UI `NearbySupermarketsModal.tsx` và API client `src/api/store.api.ts`.
-> - 🚀 **Tiến Hành**: Nối `storeApi.getNearbyStores(lat, lng)` vào `NearbySupermarketsModal.tsx` khi có tọa độ Geolocation của trình duyệt.
+> - 🟢 **Backend Node.js**: **ĐÃ HOÀN TẤT 100%** (Model `Store.ts` với GeoJSON Point & index 2dsphere, `$geoNear` tính khoảng cách km, CRUD siêu thị `POST`, `PUT`, `DELETE /api/v1/stores`, và bộ test E2E kiểm thử tự động).
+> - 🟢 **Frontend Web**: **ĐÃ HOÀN TẤT 100%** (Tích hợp Live GPS `navigator.geolocation`, tính thời gian di chuyển, chỉ đường Google Maps, kết nối giỏ đi chợ `useCartStore`, sao chép danh sách mua sắm, và trang Quản trị siêu thị `SupermarketManagementPage.tsx`).
+> - 🟢 **Kiểm thử E2E**: **ĐÃ VƯỢT QUA 100% (6/6 Test Cases)** luồng lập kế hoạch, trừ đồ tủ lạnh, tạo giỏ đi chợ, đồng bộ tủ lạnh và định vị siêu thị GPS gần nhất.
 
 ##### 1. Phía Backend (`smartcook-backend`)
-- 🟢 **`[BE ĐÃ HOÀN TẤT]`**:
+- 🟢 **`[BE ĐÃ HOÀN TẤT 100%]`**:
   - [x] Model `src/models/Store.ts`: Tọa độ địa lý GeoJSON `[longitude, latitude]` + index 2dsphere.
   - [x] Endpoints Route `/api/v1/stores`:
     - [x] `GET /api/v1/stores/nearby?lat=...&lng=...&radius=...`: Sử dụng toán tử `$geoNear` tính khoảng cách chính xác theo km.
-    - [x] `GET /api/v1/stores`, `POST/PUT/DELETE /api/v1/stores`: Quản lý siêu thị.
+    - [x] `GET /api/v1/stores`: Danh sách siêu thị có phân trang và bộ lọc thương hiệu (`brand`).
+    - [x] `GET /api/v1/stores/:id`: Lấy chi tiết thông tin siêu thị.
+    - [x] `POST /api/v1/stores`: Quản trị viên thêm mới siêu thị với tọa độ GeoJSON.
+    - [x] `PUT /api/v1/stores/:id`: Quản trị viên cập nhật thông tin và tọa độ siêu thị.
+    - [x] `DELETE /api/v1/stores/:id`: Quản trị viên xóa siêu thị.
 
 ##### 2. Phía Frontend Web (`smartcook-web`)
-- 🔵 **`[FE ĐÃ CÓ UI & API SERVICE - TIẾN HÀNH FETCH DATA THẬT]`**:
-  - [x] File `src/api/store.api.ts`: Đã có `getNearbyStores(lat, lng, radiusKm, limit)`.
-  - [ ] Nối dữ liệu vào modal `NearbySupermarketsModal.tsx`:
-    - [ ] Gọi `storeApi.getNearbyStores(lat, lng)` khi người dùng cho phép định vị trình duyệt (`navigator.geolocation`).
-    - [ ] Hiển thị danh sách siêu thị thật từ backend kèm khoảng cách km chính xác.
-    - [ ] Nút "Chỉ đường": Mở Google Maps chỉ đường kèm danh sách nguyên liệu từ `useCartStore`.
+- 🟢 **`[FE ĐÃ HOÀN TẤT 100% GPS LIVE STORES, SHOPPING LIST & ADMIN SUPERMARKET MANAGEMENT]`**:
+  - [x] File `src/api/store.api.ts`: Mở rộng đầy đủ các phương thức `getNearbyStores`, `getStores`, `getStoreById`, `createStore`, `updateStore`, `deleteStore`.
+  - [x] Nối dữ liệu vào modal `NearbySupermarketsModal.tsx`:
+    - [x] Định vị GPS thời gian thực qua `navigator.geolocation` kèm cơ chế fallback thông minh về trung tâm TP.HCM.
+    - [x] Gọi `storeApi.getNearbyStores(lat, lng, 15, 10)` fetch danh sách siêu thị thật từ backend kèm khoảng cách km chính xác.
+    - [x] Ước tính thời gian di chuyển bằng xe máy và đi bộ.
+    - [x] Nút "Chỉ đường": Mở trực tiếp Google Maps Directions chỉ đường tới siêu thị.
+    - [x] Tích hợp danh sách nguyên liệu cần mua tự động lấy từ `useCartStore` hoặc món ăn hiện tại, hỗ trợ nút "Sao chép danh sách đi chợ".
+  - [x] Trang Quản Trị Siêu Thị `SupermarketManagementPage.tsx` (`/admin/supermarkets`):
+    - [x] Thống kê tổng số siêu thị, số chi nhánh đang mở cửa, thương hiệu dẫn đầu.
+    - [x] Bộ lọc thương hiệu nhanh (Tất cả, WinMart, Co.opmart, Bách Hóa Xanh, Tops Market, Lotte Mart...).
+    - [x] Modal Thêm mới và Sửa siêu thị đầy đủ thông tin (tên, thương hiệu, địa chỉ, giờ mở cửa, số điện thoại, kinh độ/vĩ độ GPS, logo).
+    - [x] Xác nhận xóa an toàn và đường dẫn trực tiếp mở Google Maps kiểm tra vị trí.
+    - [x] Đăng ký Route `/admin/supermarkets` trong `AppRoutes.tsx` và Menu icon Bản đồ trong `AdminLayout.tsx`.
 
 ---
 
