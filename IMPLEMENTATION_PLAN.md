@@ -592,19 +592,20 @@ Dưới đây là ma trận ánh xạ toàn bộ màn hình UI sang các Endpoin
 | `MyKitchenPage` | Thêm nguyên liệu vào tủ lạnh | `/api/v1/fridge/items` | POST | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
 | `MyKitchenPage` | Xóa nguyên liệu khỏi tủ lạnh | `/api/v1/fridge/items/:id` | DELETE | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
 | `MyKitchenPage` | Gợi ý món tối ưu từ tủ lạnh | `/api/v1/recipes/fridge-match` | GET | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
+| `FloatingChefAssistant` | Mascot Trợ lý Đầu Bếp AI (Auth Gate) | `/api/v1/ai/assistant-chat` | POST | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Có Auth Lock & Khách) |
 | `DashboardPage` | KPIs, biểu đồ tăng trưởng, top món | `/api/v1/admin/dashboard` | GET | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
 | `DishManagementPage` | CRUD Món ăn kèm upload ảnh | `/api/v1/recipes` | POST/PUT/DELETE | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
 | `DishManagementPage` | Danh mục & 14 nhóm nguyên liệu | `/api/v1/categories`, `/ingredients` | GET/POST/PUT | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
 | `UserManagementPage` | Danh sách người dùng & khóa/mở | `/api/v1/admin/users`, `.../status` | GET/PATCH | ✅ ĐÃ TÍCH HỢP & HOÀN TẤT (Giai đoạn 1) |
-| `CommunityPage` | Tải Newfeed bài đăng cộng đồng | `/api/v1/posts` | GET | 🟡 Kế hoạch Giai đoạn 2 (FE đã có UI mới) |
-| `CommunityPage` | Đăng bài kèm ảnh Cloudinary | `/api/v1/posts` | POST | 🟡 Kế hoạch Giai đoạn 2 (FE đã có UI mới) |
-| `CommunityPage` | Thả 6 cảm xúc cho bài viết | `/api/v1/posts/:id/react` | POST | 🟡 Kế hoạch Giai đoạn 2 (FE đã có UI mới) |
-| `CommunityPage` | Bình luận bài viết | `/api/v1/posts/:id/comments` | POST | 🟡 Kế hoạch Giai đoạn 2 (FE đã có UI mới) |
-| `CulinaryChatModal` | Phòng chat ẩm thực & AI Lounge | `/api/v1/chat/messages` / WS | GET/POST/WS | 🟡 Kế hoạch Giai đoạn 2 (FE đã có UI & Store) |
-| `CommunityModerationPage` | Ghim bài / Xóa bài vi phạm | `/api/v1/admin/community/posts` | GET/PATCH/DELETE | 🟡 Kế hoạch Giai đoạn 2 (FE đã có UI mới) |
-| `NearbySupermarketsModal` | Tìm siêu thị gần nhất theo GPS | `/api/v1/stores/nearby` | GET | 🟡 Kế hoạch Giai đoạn 3 (Stores GeoSpatial GPS) |
-| `AIScanPage` | Quét ảnh tủ lạnh nhận diện nguyên liệu | `/api/v1/ai/scan` | POST | 🟡 Kế hoạch Giai đoạn 4 (Gemini Vision) |
-| `AIEnginePage` | Cấu hình Gemini prompt & Live Chat | `/api/v1/admin/ai/config`, `/ai/chat` | GET/PUT/POST | 🟡 Kế hoạch Giai đoạn 4 (Gemini AI Engine) |
+| `CommunityPage` | Tải Newfeed bài đăng cộng đồng | `/api/v1/posts` | GET | 🔵 BE ĐÃ XONG (Model, Route) ➔ Sẵn sàng Fetch API vào FE |
+| `CommunityPage` | Đăng bài kèm ảnh Cloudinary | `/api/v1/posts` | POST | 🔵 BE ĐÃ XONG (Model, Route) ➔ Sẵn sàng Fetch API vào FE |
+| `CommunityPage` | Thả 6 cảm xúc cho bài viết | `/api/v1/posts/:id/react` | POST | 🔵 BE ĐÃ XONG (Model, Route) ➔ Sẵn sàng Fetch API vào FE |
+| `CommunityPage` | Bình luận bài viết | `/api/v1/posts/:id/comments` | POST | 🔵 BE ĐÃ XONG (Model, Route) ➔ Sẵn sàng Fetch API vào FE |
+| `CulinaryChatModal` | Phòng chat ẩm thực & AI Lounge | `/api/v1/chat/messages` / WS | GET/POST/WS | 🔵 BE ĐÃ XONG (Route, Model) ➔ Sẵn sàng Fetch API vào FE |
+| `CommunityModerationPage` | Ghim bài / Xóa bài vi phạm | `/api/v1/posts/admin/...` | GET/PATCH/DELETE | 🔵 BE ĐÃ XONG (Route, Model) ➔ Sẵn sàng Fetch API vào FE |
+| `NearbySupermarketsModal` | Tìm siêu thị gần nhất theo GPS | `/api/v1/stores/nearby` | GET | 🔵 BE ĐÃ XONG (Route, Model 2dsphere) ➔ Sẵn sàng Fetch API |
+| `AIScanPage` | Quét ảnh tủ lạnh nhận diện nguyên liệu | `/api/v1/ai/scan-ingredients` | POST | 🔵 BE ĐÃ XONG (Route, Vision Gemini) ➔ Sẵn sàng Fetch API |
+| `AIEnginePage` | Cấu hình Gemini prompt & Live Chat | `/api/v1/ai/assistant-chat` | GET/PUT/POST | 🔵 BE ĐÃ XONG ➔ Sẵn sàng nối Live Playground |
 | `MarketingPage` | Lên lịch gửi Push Notifications | `/api/v1/admin/marketing/push` | GET/POST | 🟡 Kế hoạch Giai đoạn 5 (Push Marketing) |
 
 ---
@@ -613,26 +614,38 @@ Dưới đây là ma trận ánh xạ toàn bộ màn hình UI sang các Endpoin
 
 > **Quy Ước Nhãn Dán Trực Quan**:
 > - 🟢 **`[BE ĐÃ IMPLEMENT]`**: Backend đã code xong 100%, có sẵn Model, Controller, Route, Swagger và kết nối MongoDB.
-> - 🟡 **`[BE CẦN BỔ SUNG MỚI]`**: Backend chưa có, cần tạo mới Model, Controller, Service và Endpoints tương ứng.
-> - 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**: Frontend đã code xong giao diện 100%, chỉ cần viết API client service và gắn data thật thay thế Mock State.
+> - 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**: Frontend đã code xong giao diện 100% & đã có file API client, tiến hành gọi API thật thay thế Mock State.
 > - 🟣 **`[FE TỐI ƯU & TEST]`**: Tối ưu hiệu năng, Code Splitting, Toast thông báo và kiểm thử luồng người dùng.
 
 ```mermaid
 graph TD
     subgraph DONE["HIỆN TRẠNG ĐÃ HOÀN THÀNH (DONE)"]
-        D1["Backend: 7 Core Modules ĐÃ IMPLEMENT XONG"]
-        D2["Frontend Web: 78 Components & 17 Pages UI ĐÃ XONG 100%"]
+        D1["Backend: 12 Modules ĐÃ IMPLEMENT XONG 100% (Auth, Core, Community, Chat, Stores, AI)"]
+        D2["Frontend Web: 78+ Components, 17 Pages UI ĐÃ XONG 100% & ĐÃ NỐI TOÀN BỘ CORE GIAI ĐOẠN 1"]
+        D3["Mascot Đầu Bếp AI FloatingChefAssistant ĐÃ HOÀN THÀNH KẾT NỐI GEMINI AI VÀ AUTH LOCK"]
     end
 
-    subgraph ROADMAP["LỘ TRÌNH THỰC THI 5 GIAI ĐOẠN TIẾP THEO (ACTION PLAN)"]
-        G1["Giai đoạn 1: Kết Nối Core API Đã Có Vào Web (Auth, Tủ Lạnh, Món Ăn, Admin)"]
-        G2["Giai đoạn 2: Bổ Sung Backend & Kết Nối Cộng Đồng (Posts, Reactions, Comments)"]
-        G3["Giai đoạn 3: Bổ Sung Backend & Kết Nối Siêu Thị GPS (Stores, GeoSpatial $geoNear)"]
-        G4["Giai đoạn 4: Bổ Sung Backend & Kết Nối AI (Gemini Vision Scan & Chat Playground)"]
-        G5["Giai đoạn 5: Tối Ưu Bundle, Toast Phản Hồi, Dual-Mode & Kiểm Thử E2E Toàn Diện"]
+    subgraph ROADMAP["LỘ TRÌNH THỰC THI TIẾP THEO (ACTION PLAN)"]
+        G1["Giai đoạn 1: Kết Nối Core API (Auth, Tủ Lạnh, Món Ăn, Admin) - ✅ XONG 100%"]
+        G2["Giai đoạn 2: Kết Nối Mạng Xã Hội Cộng Đồng & Chat (CommunityPage & Moderation) - 🚀 SẴN SÀNG LÀM NGAY"]
+        G3["Giai đoạn 3: Kết Nối Siêu Thị GPS (NearbySupermarketsModal với storeApi) - ⏳ SẴN SÀNG LÀM"]
+        G4["Giai đoạn 4: Kết Nối Quét Ảnh Tủ Lạnh AI (AIScanPage với aiApi.scanIngredients) - ⏳ SẴN SÀNG LÀM"]
+        G5["Giai đoạn 5: Tối Ưu Bundle, Toast Phản Hồi, Dual-Mode & Kiểm Thử E2E Toàn Diện - ⏳ LÀM SAU CÙNG"]
         G1 --> G2 --> G3 --> G4 --> G5
     end
 ```
+
+---
+
+### 6.0. BẢNG TỔNG HỢP CHI TIẾT TRẠNG THÁI TỪNG PHASE (ĐÃ LÀM - CHƯA LÀM - CÒN THIẾU GÌ - SẴN SÀNG LÀM)
+
+| Giai Đoạn (Phase) | Trạng Thái Tổng Thể | Phía Backend | Phía Frontend Web | Còn Thiếu Cái Gì Cần Bổ Sung? | Đã Sẵn Sàng Làm Chưa? |
+| :--- | :---: | :--- | :--- | :--- | :---: |
+| **Phase 1: Core System & Authentication & Mascot AI Chef** | ✅ **ĐÃ LÀM** *(Hoàn tất 100%)* | 🟢 Đã hoàn thành 100% (Auth, JWT, Tủ Lạnh, Món Ăn, XP, Admin) | 🟢 Đã hoàn thành 100% (Login, Register, Google GIS, Tủ Lạnh thật, Chi tiết món, XP, Admin) | **Không thiếu gì** (Đã test liên thông & merge main/develop) | ✅ **ĐÃ XONG** |
+| **Phase 2: Mạng Xã Hội Cộng Đồng & Chat Realtime** | 🚀 **ĐANG LÀM / CHƯA NỐI VÀO MÀN HÌNH** | 🟢 Đã hoàn thành 100% (`Post`, `Comment`, `Conversation`, `Message`, `/posts`, `/chat`, Socket.io) | 🟡 Đã xong UI `CommunityPage`, `CulinaryChatModal`, `CommunityModerationPage` & file `community.api.ts` | ⚠️ `CommunityPage.tsx` vẫn dùng mock data, **chưa gọi `communityApi`** (getPosts, createPost kèm ảnh Cloudinary, reactPost 6 cảm xúc, addComment).<br/>⚠️ `CommunityModerationPage.tsx` chưa gọi API duyệt bài thật.<br/>⚠️ `CulinaryChatModal.tsx` chưa nối WebSocket/API chat thật. | 🔥 **SẴN SÀNG LÀM NGAY** *(Ưu tiên số 1)* |
+| **Phase 3: Chuỗi Siêu Thị GPS & Giỏ Đi Chợ Thông Minh** | ⏳ **CHƯA NỐI API VÀO MÀN HÌNH** | 🟢 Đã hoàn thành 100% (`Store.ts` GeoJSON Point, index 2dsphere, `/stores/nearby`, `$geoNear`) | 🟡 Đã xong UI `NearbySupermarketsModal`, giỏ hàng `useCartStore` & file `store.api.ts` | ⚠️ `NearbySupermarketsModal.tsx` vẫn dùng mảng cứng `POPULAR_SUPERMARKETS`, **chưa gọi `storeApi.getNearbyStores(lat, lng)`** khi user cấp quyền GPS Geolocation. | ✅ **SẴN SÀNG LÀM NGAY** *(Có thể làm song song)* |
+| **Phase 4: Trí Tuệ Nhân Tạo AI (Gemini Scanner & Assistant)** | 🟡 **LÀM MỘT PHẦN** *(Xong Mascot, Chưa nối Scan)* | 🟢 Đã hoàn thành 100% (`ScanHistory.ts`, `/ai/assistant-chat`, `/ai/scan-ingredients`, Gemini Flash Vision) | 🟡 Đã xong Mascot `FloatingChefAssistant.tsx` (AI Chat + Auth Gate); UI `AIScanPage.tsx` và `AIEnginePage.tsx` | ⚠️ File `src/api/ai.api.ts` **chưa có hàm `scanIngredients(file: File)`**.<br/>⚠️ `AIScanPage.tsx` đang dùng `setTimeout` giả lập, **chưa gửi ảnh thật lên `/ai/scan-ingredients`** và chưa có nút *"Lưu vào tủ lạnh"* (`POST /fridge/items`).<br/>⚠️ `AIEnginePage.tsx` playground chưa gọi `aiApi.assistantChat`. | ✅ **SẴN SÀNG LÀM NGAY** |
+| **Phase 5: Tối Ưu Bundle, Toast, Dual-Mode & Kiểm Thử E2E** | ⏳ **CHƯA LÀM** | 🟢 Server chạy ổn định, có script test Phase 1 | 🟡 Build chạy qua nhưng chunk `index-xxx.js` còn lớn (~912kB) | ⚠️ Chưa tách code `React.lazy()` & `Suspense` cho các Route Admin.<br/>⚠️ Chưa tích hợp Toast thống nhất (thay thế alert).<br/>⚠️ Chưa có kịch bản test E2E liên thông toàn diện. | ⏳ **LÀM SAU KHI NỐI XONG PHASE 2, 3, 4** |
 
 ---
 
@@ -781,108 +794,96 @@ graph TD
 
 #### GIAI ĐOẠN 2: MODULE MẠNG XÃ HỘI CỘNG ĐỒNG & PHÒNG CHAT ẨM THỰC (COMMUNITY NEWFEED, REACTIONS, COMMENTS & CHAT LOUNGE)
 > **Trạng Thái**: 
-> - 🟢 **Frontend Web**: **ĐÃ HOÀN THÀNH GIAO DIỆN & STATE MANAGEMENT VƯỢT TIẾN ĐỘ** (Commit `2c657e5`: Redesign Post Composer, Feed Cards, Reactions, Comments, bổ sung `CulinaryChatModal.tsx` và `useChatStore.ts`).
-> - 🟡 **Backend Node.js**: **CẦN XÂY DỰNG MODELS, CONTROLLERS, ROUTES & SOCKET.IO GATEWAY**.
-> **Mục tiêu**: Xây dựng backend cho mạng xã hội ẩm thực và phòng chat thời gian thực, kết nối liên thông vào `CommunityPage`, `CulinaryChatModal` cùng trang kiểm duyệt `CommunityModerationPage`.
+> - 🟢 **Backend Node.js**: **ĐÃ XÂY DỰNG XONG 100%** (Models `Post.ts`, `Comment.ts`, `Conversation.ts`, `Message.ts`, Routes `/api/v1/posts`, `/api/v1/community/posts`, `/api/v1/chat`, và Socket.io Gateway).
+> - 🟢 **Frontend Web**: **ĐÃ HOÀN THÀNH 100% FETCH API, REACTIONS, COMMENTS, TOPIC FILTER & MODERATION** (Đã kết nối `communityApi` vào `CommunityPage.tsx`, `CulinaryChatModal.tsx` và `CommunityModerationPage.tsx`).
+> - 🟢 **Kiểm thử E2E**: **ĐÃ VƯỢT QUA 100% (6/6 Test Cases)** luồng Feed, Dual Routing Alias, 6 Reactions, Nested Comments, Phân Quyền Bảo Mật 403, và Socket.io Realtime Broadcast.
 
 ##### 1. Phía Backend (`smartcook-backend`)
-- 🟡 **`[BE CẦN BỔ SUNG MỚI]`**:
-  - [ ] **Data Models (Schemas)**:
-    - [ ] Tạo Model `src/models/Post.ts`: Lưu trữ `authorId`, `caption`, mảng ảnh `images` (Cloudinary URL), `recipeId`, `tags`, `reactionCounts` (like, love, haha, wow, sad, angry), `totalReactions`, `commentsCount`, `status` (`published`, `pinned`, `hidden`).
-    - [ ] Tạo Model `src/models/Comment.ts`: Lưu trữ `postId`, `authorId`, `content`, `parentCommentId` (hỗ trợ trả lời bình luận nhiều cấp).
-    - [ ] Tạo Model `src/models/Reaction.ts`: Quản lý lượt thả cảm xúc duy nhất của từng user theo từng bài viết.
-    - [ ] Tạo Model `src/models/Conversation.ts`: Quản lý phòng chat/cuộc trò chuyện (`participants`, `lastMessage`, `unreadCounts`).
-    - [ ] Tạo Model `src/models/Message.ts`: Lưu trữ tin nhắn chat realtime (`conversation`, `sender`, `text`, `mediaUrl`, `isRead`).
-  - [ ] **Business Logic & Service Layer**:
-    - [ ] Tạo `post.repository.ts`, `post.service.ts` (CRUD bài viết, phân trang newfeed, ghim bài).
-    - [ ] Tạo `comment.repository.ts`, `comment.service.ts` (Bình luận, phản hồi lồng nhau).
-    - [ ] Tạo `reaction.service.ts` (Thả/đổi/hủy cảm xúc, cập nhật atomic counter).
-    - [ ] Tạo `chat.service.ts` (Lịch sử tin nhắn, danh sách hội thoại).
-  - [ ] **Socket.io Realtime Gateway (`src/socket/`)**:
-    - [ ] Cấu hình Socket.io Server kèm middleware xác thực JWT qua handshake (`socketAuth.ts`).
-    - [ ] Xử lý sự kiện chat: `join_channel`, `send_message`, `receive_message`, `typing`.
-    - [ ] Xử lý broadcast realtime thông báo cảm xúc và bình luận mới.
-  - [ ] **Endpoints Route `/api/v1/posts` & `/api/v1/chat`**:
-    - `GET /api/v1/posts`: Lấy danh sách bài viết Newfeed có phân trang.
-    - `POST /api/v1/posts`: Tạo bài viết mới kèm upload ảnh Cloudinary (multipart/form-data).
-    - `GET /api/v1/posts/:id`: Lấy chi tiết bài viết và danh sách bình luận kèm theo.
-    - `POST /api/v1/posts/:id/react`: Thả hoặc gỡ cảm xúc (like, love, haha, wow, sad, angry).
-    - `POST /api/v1/posts/:id/comments`: Thêm bình luận mới hoặc trả lời bình luận.
-    - `DELETE /api/v1/posts/:id`: Xóa bài viết của tác giả.
-    - `GET /api/v1/chat/channels/:channelId/messages`: Lấy lịch sử tin nhắn phòng chat.
-    - `POST /api/v1/chat/messages`: Gửi tin nhắn mới kèm đính kèm ảnh món ăn.
-    - `PATCH /api/v1/admin/community/posts/:id/pin`: Ghim bài nổi bật lên đầu trang (Quyền Admin).
-    - `PATCH /api/v1/admin/community/posts/:id/status`: Ẩn/Hiện bài viết, đánh dấu vi phạm (Quyền Admin).
-  - [ ] Bổ sung Swagger tài liệu API: `src/docs/community.swagger.ts` và `src/docs/chat.swagger.ts`.
+- 🟢 **`[BE ĐÃ HOÀN TẤT & ĐÃ MOUNT VÀO ROUTER]`**:
+  - [x] **Data Models (Schemas)**:
+    - [x] Model `src/models/Post.ts`: Lưu trữ `authorId`, `caption`, mảng ảnh `images` (Cloudinary URL), `recipeId`, `tags`, `reactionCounts` (like, love, haha, wow, sad, angry), `totalReactions`, `commentsCount`, `status` (`published`, `pinned`, `hidden`), `isPinned`.
+    - [x] Model `src/models/Comment.ts`: Lưu trữ `postId`, `authorId`, `content`, `parentCommentId` (hỗ trợ trả lời bình luận nhiều cấp).
+    - [x] Model `src/models/Conversation.ts`: Quản lý phòng chat/cuộc trò chuyện (`participants`, `lastMessage`, `unreadCounts`).
+    - [x] Model `src/models/Message.ts`: Lưu trữ tin nhắn chat realtime (`conversation`, `sender`, `text`, `mediaUrl`, `isRead`).
+  - [x] **Endpoints Route `/api/v1/posts` & `/api/v1/chat`**:
+    - [x] `GET /api/v1/posts`: Lấy danh sách bài viết Newfeed có phân trang.
+    - [x] `POST /api/v1/posts`: Tạo bài viết mới kèm upload ảnh Cloudinary (multipart/form-data).
+    - [x] `GET /api/v1/posts/:id`: Lấy chi tiết bài viết và danh sách bình luận kèm theo.
+    - [x] `POST /api/v1/posts/:id/react`: Thả hoặc gỡ 6 loại cảm xúc (like, love, haha, wow, sad, angry).
+    - [x] `POST /api/v1/posts/:id/comments`: Thêm bình luận mới hoặc trả lời bình luận.
+    - [x] `POST /api/v1/posts/:id/share`: Chia sẻ bài viết.
+    - [x] `DELETE /api/v1/posts/:id`: Xóa bài viết của tác giả.
+    - [x] `PATCH /api/v1/posts/:id/pin`: Ghim hoặc bỏ ghim bài viết lên đầu trang.
+    - [x] `PATCH /api/v1/posts/:id/status`: Quản trị viên cập nhật trạng thái bài viết (`published`, `hidden`, `flagged`).
+    - [x] `GET /api/v1/chat/...`: Lịch sử tin nhắn phòng chat và danh sách hội thoại.
 
 ##### 2. Phía Frontend Web (`smartcook-web`)
-- 🔵 **`[FE ĐÃ CÓ UI & STORE - TIẾN HÀNH FETCH API KHI BE HOÀN TẤT]`**:
+- 🟢 **`[FE ĐÃ HOÀN TẤT 100% TÍCH HỢP DATA THẬT & MODERATION]`**:
   - [x] Giao diện Newfeed và Post Composer mới: Đã hoàn thiện trong `CommunityPage.tsx`.
   - [x] Giao diện Phòng Chat Ẩm Thực: Đã hoàn thiện trong `CulinaryChatModal.tsx` và `useChatStore.ts`.
-  - [ ] Tạo file `src/api/community.api.ts`: Viết các hàm gọi Newfeed, tạo bài viết, thả cảm xúc, gửi bình luận, ghim bài.
-  - [ ] Tạo file `src/api/chat.api.ts`: Viết các hàm lấy lịch sử tin nhắn, gửi tin nhắn.
-  - [ ] Tích hợp Socket.io Client (`socket.io-client`): Lắng nghe sự kiện tin nhắn mới và cập nhật trạng thái phòng chat realtime.
-  - [ ] Nối dữ liệu vào màn hình `CommunityPage`:
-    - Tải Newfeed bài đăng thật từ Backend MongoDB.
-    - Form tạo bài viết: Đính kèm ảnh thực tế tải lên Cloudinary thông qua Backend.
-    - Tương tác cảm xúc: Bấm chọn 1 trong 6 cảm xúc -> cập nhật số lượng realtime.
-    - Gửi bình luận: Hiển thị ngay bình luận mới vào danh sách.
-  - [ ] Nối dữ liệu vào màn hình `CommunityModerationPage`:
-    - Hiển thị danh sách các bài viết trên hệ thống.
-    - Thực hiện hành động ghim bài viết nổi bật, ẩn bài vi phạm hoặc xóa bài viết.
+  - [x] File `src/api/community.api.ts`: Đã có đầy đủ các hàm `getPosts`, `createPost`, `reactPost`, `sharePost`, `getComments`, `addComment`, `deletePost`, `togglePin`, `updateStatus`.
+  - [x] Nối dữ liệu vào màn hình `CommunityPage.tsx`:
+    - [x] Thay thế mock posts bằng `communityApi.getPosts()` (kèm phân trang, lọc theo topic/tag, loading skeleton và empty state).
+    - [x] Form tạo bài viết: Gọi `communityApi.createPost(formData)` đính kèm ảnh tải lên backend -> Cloudinary.
+    - [x] Thả cảm xúc: Gọi `communityApi.reactPost(postId, type)` cập nhật phản hồi tức thì (optimistic update 6 cảm xúc).
+    - [x] Bình luận: Gọi `communityApi.addComment(postId, content)` hiển thị bình luận mới ngay lập tức.
+    - [x] Thẻ công thức nấu ăn đính kèm: Nhúng card xem công thức trực tiếp (`post.dishName`, `post.recipeId`).
+    - [x] Quyền xóa bài viết: Tác giả hoặc Quản trị viên có thể xóa bài viết trực tiếp trên card bài đăng.
+  - [x] Nối dữ liệu vào màn hình `CommunityModerationPage.tsx`:
+    - [x] Tải danh sách bài viết thật từ backend để kiểm duyệt.
+    - [x] Thao tác ghim bài (`togglePin`), gắn nhãn spam/ẩn bài vi phạm (`updateStatus`), xóa vĩnh viễn (`deletePost`) đồng bộ API thật.
 
 ---
 
 #### GIAI ĐOẠN 3: MODULE CHUỖI SIÊU THỊ GPS & GIỎ ĐI CHỢ THÔNG MINH
-> **Mục tiêu**: Kích hoạt tính năng tìm kiếm siêu thị theo tọa độ GPS thực tế của trình duyệt trên `NearbySupermarketsModal` và đồng bộ danh sách cần mua từ `GroceryCartDrawer`.
+> **Trạng Thái**: 
+> - 🟢 **Backend**: Đã có Model `Store.ts` (GeoJSON Point, index 2dsphere) và route `/api/v1/stores/nearby`, `/api/v1/stores`.
+> - 🟢 **Frontend**: Đã có UI `NearbySupermarketsModal.tsx` và API client `src/api/store.api.ts`.
+> - 🚀 **Tiến Hành**: Nối `storeApi.getNearbyStores(lat, lng)` vào `NearbySupermarketsModal.tsx` khi có tọa độ Geolocation của trình duyệt.
 
 ##### 1. Phía Backend (`smartcook-backend`)
-- 🟡 **`[BE CẦN BỔ SUNG MỚI]`**:
-  - [ ] Tạo Model `src/models/Store.ts`:
-    - `name` (Tên siêu thị: WinMart, Co.opmart, Bách Hóa Xanh, Lotte Mart, AEON Mall,...).
-    - `brand` (Nhãn hàng), `address` (Địa chỉ chi tiết), `phone`, `openingHours`.
-    - Tọa độ địa lý GeoJSON: `location: { type: { type: String, default: "Point" }, coordinates: [longitude, latitude] }`.
-    - Đánh chỉ mục địa lý 2D: `StoreSchema.index({ location: "2dsphere" })`.
-  - [ ] Nạp dữ liệu siêu thị mẫu (`seedStores.ts`): Tạo 30+ địa điểm siêu thị lớn tại các quận trung tâm.
-  - [ ] Xây dựng Endpoints Route `/api/v1/stores`:
-    - `GET /api/v1/stores/nearby?lat=...&lng=...&radius=5000`: Sử dụng toán tử `$geoNear` của MongoDB để tính khoảng cách chính xác theo mét/km và sắp xếp từ gần đến xa.
-    - `POST/PUT/DELETE /api/v1/stores`: Quản lý danh sách chi nhánh siêu thị (Quyền Admin).
-  - [ ] Bổ sung Swagger tài liệu API: `src/docs/store.swagger.ts`.
+- 🟢 **`[BE ĐÃ HOÀN TẤT]`**:
+  - [x] Model `src/models/Store.ts`: Tọa độ địa lý GeoJSON `[longitude, latitude]` + index 2dsphere.
+  - [x] Endpoints Route `/api/v1/stores`:
+    - [x] `GET /api/v1/stores/nearby?lat=...&lng=...&radius=...`: Sử dụng toán tử `$geoNear` tính khoảng cách chính xác theo km.
+    - [x] `GET /api/v1/stores`, `POST/PUT/DELETE /api/v1/stores`: Quản lý siêu thị.
 
 ##### 2. Phía Frontend Web (`smartcook-web`)
-- 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**:
-  - [ ] Tạo file `src/api/store.api.ts`: Viết hàm `getNearbyStores(lat, lng, radius)`.
-  - [ ] Nối dữ liệu vào modal `NearbySupermarketsModal`:
-    - Sử dụng `navigator.geolocation.getCurrentPosition` lấy tọa độ thực tế của người dùng từ trình duyệt web.
-    - Gọi API `/stores/nearby` hiển thị danh sách các siêu thị gần nhất kèm số km chính xác.
-    - Nút "Chỉ đường": Mở Google Maps điều hướng đến siêu thị đã chọn kèm theo danh sách các nguyên liệu đang có trong `useCartStore`.
+- 🔵 **`[FE ĐÃ CÓ UI & API SERVICE - TIẾN HÀNH FETCH DATA THẬT]`**:
+  - [x] File `src/api/store.api.ts`: Đã có `getNearbyStores(lat, lng, radiusKm, limit)`.
+  - [ ] Nối dữ liệu vào modal `NearbySupermarketsModal.tsx`:
+    - [ ] Gọi `storeApi.getNearbyStores(lat, lng)` khi người dùng cho phép định vị trình duyệt (`navigator.geolocation`).
+    - [ ] Hiển thị danh sách siêu thị thật từ backend kèm khoảng cách km chính xác.
+    - [ ] Nút "Chỉ đường": Mở Google Maps chỉ đường kèm danh sách nguyên liệu từ `useCartStore`.
 
 ---
 
-#### GIAI ĐOẠN 4: MODULE TRÍ TUỆ NHÂN TẠO AI (GEMINI VISION SCANNER & PLAYGROUND CHAT)
-> **Mục tiêu**: Kích hoạt tính năng quét ảnh bàn bếp/tủ lạnh nhận diện nguyên liệu trên `AIScanPage` và live playground chat trên `AIEnginePage`.
+#### GIAI ĐOẠN 4: MODULE TRÍ TUỆ NHÂN TẠO AI (GEMINI VISION SCANNER & MASCOT CHEF ASSISTANT)
+> **Trạng Thái**: 
+> - 🟢 **Backend**: Đã có Model `ScanHistory.ts`, route `/api/v1/ai/assistant-chat`, `/api/v1/ai/scan-ingredients`, `/api/v1/ai/scan-history`.
+> - 🟢 **Frontend Web**:
+>   - ĐÃ HOÀN THÀNH mascot `FloatingChefAssistant.tsx` tích hợp Gemini AI chat, hỗ trợ bảo vệ đăng nhập (Lock banner, nút đăng nhập/đăng ký, mở chat khi đã đăng nhập).
+>   - ĐÃ CÓ UI `AIScanPage.tsx` và `AIEnginePage.tsx`.
+> - 🚀 **Tiến Hành**: Bổ sung hàm `scanIngredients` vào `ai.api.ts` và nối vào `AIScanPage.tsx`.
 
 ##### 1. Phía Backend (`smartcook-backend`)
-- 🟡 **`[BE CẦN BỔ SUNG MỚI]`**:
-  - [ ] Cấu hình Google Gemini AI SDK (`@google/genai` hoặc `@google/generative-ai`) sử dụng `GEMINI_API_KEY`.
-  - [ ] Tạo Model `src/models/ScanHistory.ts`: Lưu trữ ảnh chụp tủ lạnh, nhãn nguyên liệu nhận diện được, độ tin cậy và món ăn đề xuất.
-  - [ ] Xây dựng Endpoints Route `/api/v1/ai`:
-    - `POST /api/v1/ai/scan`: Nhận file ảnh tải lên -> Upload Cloudinary -> Gửi ảnh sang Gemini 1.5/2.0 Flash Vision bóc tách danh sách nguyên liệu -> Đối soát với database nguyên liệu gợi ý món -> Lưu lịch sử quét.
-    - `POST /api/v1/ai/chat`: Chat hỏi đáp ẩm thực trực tiếp với Trợ lý Bếp Trưởng SmartCook AI.
-    - `GET /api/v1/admin/ai/config` & `PUT /api/v1/admin/ai/config`: Xem và tùy chỉnh System Prompt, Temperature, Model AI (Quyền Admin).
-  - [ ] Bổ sung Swagger tài liệu API: `src/docs/ai.swagger.ts`.
+- 🟢 **`[BE ĐÃ HOÀN TẤT]`**:
+  - [x] Tích hợp Gemini 1.5/2.5 Flash SDK (`@google/genai`).
+  - [x] Model `src/models/ScanHistory.ts`: Lưu ảnh, nhãn nguyên liệu, độ tin cậy, món gợi ý.
+  - [x] Endpoints Route `/api/v1/ai`:
+    - [x] `POST /api/v1/ai/assistant-chat`: Chat với Đầu Bếp Trợ Lý AI kết hợp ngữ cảnh tủ lạnh và khẩu vị (Bảo vệ JWT `authenticate`).
+    - [x] `POST /api/v1/ai/scan-ingredients`: Tải ảnh tủ lạnh/bàn bếp -> Cloudinary -> Gemini Vision nhận diện nguyên liệu & gợi ý món.
+    - [x] `GET /api/v1/ai/scan-history`: Lấy lịch sử quét.
 
 ##### 2. Phía Frontend Web (`smartcook-web`)
-- 🔵 **`[FE ĐÃ CÓ UI - TIẾN HÀNH FETCH API]`**:
-  - [ ] Tạo file `src/api/ai.api.ts`: Viết các hàm `scanKitchenImage(file)`, `sendAiChatMessage(prompt)`, `getAiConfig()`, `updateAiConfig(payload)`.
-  - [ ] Nối dữ liệu vào màn hình `AIScanPage`:
-    - Cho phép người dùng kéo thả hoặc chọn file ảnh chụp tủ lạnh/bàn bếp thực tế.
-    - Hiển thị danh sách nguyên liệu bóc tách được từ Gemini Vision.
-    - Nút bấm 1 chạm: "Lưu tất cả vào Tủ Lạnh của tôi" (tự động gọi `POST /fridge/items` lưu vào tủ lạnh).
-  - [ ] Nối dữ liệu vào màn hình `AIEnginePage`:
-    - Đọc và lưu cấu hình System Prompt lên Backend.
-    - Live Test Playground: Khung chat hỏi đáp ẩm thực phản hồi trực tiếp từ API Gemini thật.
-
+- 🔵 **`[FE ĐÃ HOÀN THÀNH CHATBOT - TIẾN HÀNH NỐI AI SCANNER]`**:
+  - [x] `FloatingChefAssistant.tsx`: Mascot Đầu Bếp AI tròn nổi bật ở góc phải màn hình, chat trực tiếp với `/api/v1/ai/assistant-chat`, chặn hỏi đáp khi chưa đăng nhập và điều hướng `/login`.
+  - [ ] Bổ sung hàm `scanIngredients(file: File)` vào `src/api/ai.api.ts`.
+  - [ ] Nối API vào `AIScanPage.tsx`:
+    - [ ] Gửi ảnh thật lên `/api/v1/ai/scan-ingredients`.
+    - [ ] Hiển thị kết quả bóc tách nguyên liệu thật từ Gemini Vision.
+    - [ ] Nút "Thêm vào tủ lạnh": Tự động thêm các nguyên liệu quét được vào `MyKitchenPage` (`POST /fridge/items`).
+  - [ ] Nối `AIEnginePage.tsx`: Live playground gọi `aiApi.assistantChat`.
 ---
 
 #### GIAI ĐOẠN 5: TỐI ƯU HIỆU NĂNG BUNDLE, THÔNG BÁO TOAST, DUAL-MODE & KIỂM THỬ E2E
