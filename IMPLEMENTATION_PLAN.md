@@ -795,13 +795,13 @@ graph TD
 #### GIAI ĐOẠN 2: MODULE MẠNG XÃ HỘI CỘNG ĐỒNG & PHÒNG CHAT ẨM THỰC (COMMUNITY NEWFEED, REACTIONS, COMMENTS & CHAT LOUNGE)
 > **Trạng Thái**: 
 > - 🟢 **Backend Node.js**: **ĐÃ XÂY DỰNG XONG 100%** (Models `Post.ts`, `Comment.ts`, `Conversation.ts`, `Message.ts`, Routes `/api/v1/posts`, `/api/v1/community/posts`, `/api/v1/chat`, và Socket.io Gateway).
-> - 🟢 **Frontend Web**: **ĐÃ HOÀN THÀNH GIAO DIỆN & STATE MANAGEMENT VƯỢT TIẾN ĐỘ** (Commit `2c657e5`: Redesign Post Composer, Feed Cards, Reactions, Comments, bổ sung `CulinaryChatModal.tsx` và `useChatStore.ts`, đã tạo sẵn `src/api/community.api.ts`).
-> - 🚀 **Tiến Hành**: Nối `communityApi` vào `CommunityPage.tsx`, `CulinaryChatModal.tsx` và `CommunityModerationPage.tsx`.
+> - 🟢 **Frontend Web**: **ĐÃ HOÀN THÀNH 100% FETCH API, REACTIONS, COMMENTS, TOPIC FILTER & MODERATION** (Đã kết nối `communityApi` vào `CommunityPage.tsx`, `CulinaryChatModal.tsx` và `CommunityModerationPage.tsx`).
+> - 🟢 **Kiểm thử E2E**: **ĐÃ VƯỢT QUA 100% (6/6 Test Cases)** luồng Feed, Dual Routing Alias, 6 Reactions, Nested Comments, Phân Quyền Bảo Mật 403, và Socket.io Realtime Broadcast.
 
 ##### 1. Phía Backend (`smartcook-backend`)
 - 🟢 **`[BE ĐÃ HOÀN TẤT & ĐÃ MOUNT VÀO ROUTER]`**:
   - [x] **Data Models (Schemas)**:
-    - [x] Model `src/models/Post.ts`: Lưu trữ `authorId`, `caption`, mảng ảnh `images` (Cloudinary URL), `recipeId`, `tags`, `reactionCounts` (like, love, haha, wow, sad, angry), `totalReactions`, `commentsCount`, `status` (`published`, `pinned`, `hidden`).
+    - [x] Model `src/models/Post.ts`: Lưu trữ `authorId`, `caption`, mảng ảnh `images` (Cloudinary URL), `recipeId`, `tags`, `reactionCounts` (like, love, haha, wow, sad, angry), `totalReactions`, `commentsCount`, `status` (`published`, `pinned`, `hidden`), `isPinned`.
     - [x] Model `src/models/Comment.ts`: Lưu trữ `postId`, `authorId`, `content`, `parentCommentId` (hỗ trợ trả lời bình luận nhiều cấp).
     - [x] Model `src/models/Conversation.ts`: Quản lý phòng chat/cuộc trò chuyện (`participants`, `lastMessage`, `unreadCounts`).
     - [x] Model `src/models/Message.ts`: Lưu trữ tin nhắn chat realtime (`conversation`, `sender`, `text`, `mediaUrl`, `isRead`).
@@ -813,20 +813,25 @@ graph TD
     - [x] `POST /api/v1/posts/:id/comments`: Thêm bình luận mới hoặc trả lời bình luận.
     - [x] `POST /api/v1/posts/:id/share`: Chia sẻ bài viết.
     - [x] `DELETE /api/v1/posts/:id`: Xóa bài viết của tác giả.
+    - [x] `PATCH /api/v1/posts/:id/pin`: Ghim hoặc bỏ ghim bài viết lên đầu trang.
+    - [x] `PATCH /api/v1/posts/:id/status`: Quản trị viên cập nhật trạng thái bài viết (`published`, `hidden`, `flagged`).
     - [x] `GET /api/v1/chat/...`: Lịch sử tin nhắn phòng chat và danh sách hội thoại.
 
 ##### 2. Phía Frontend Web (`smartcook-web`)
-- 🔵 **`[FE ĐÃ CÓ UI & API SERVICE - TIẾN HÀNH FETCH DATA THẬT]`**:
+- 🟢 **`[FE ĐÃ HOÀN TẤT 100% TÍCH HỢP DATA THẬT & MODERATION]`**:
   - [x] Giao diện Newfeed và Post Composer mới: Đã hoàn thiện trong `CommunityPage.tsx`.
   - [x] Giao diện Phòng Chat Ẩm Thực: Đã hoàn thiện trong `CulinaryChatModal.tsx` và `useChatStore.ts`.
-  - [x] File `src/api/community.api.ts`: Đã có các hàm `getPosts`, `createPost`, `reactPost`, `sharePost`, `getComments`, `addComment`.
-  - [ ] Nối dữ liệu vào màn hình `CommunityPage.tsx`:
-    - [ ] Thay thế mock posts bằng `communityApi.getPosts()` (kèm phân trang, lọc theo tag).
-    - [ ] Form tạo bài viết: Gọi `communityApi.createPost(formData)` đính kèm ảnh tải lên backend -> Cloudinary.
-    - [ ] Thả cảm xúc: Gọi `communityApi.reactPost(postId, type)` cập nhật phản hồi tức thì.
-    - [ ] Bình luận: Gọi `communityApi.addComment(postId, content)` hiển thị bình luận mới.
-  - [ ] Nối dữ liệu vào màn hình `CommunityModerationPage.tsx`:
-    - [ ] Tải danh sách bài viết thật từ backend để kiểm duyệt, ghim bài (`pin`), ẩn bài vi phạm.
+  - [x] File `src/api/community.api.ts`: Đã có đầy đủ các hàm `getPosts`, `createPost`, `reactPost`, `sharePost`, `getComments`, `addComment`, `deletePost`, `togglePin`, `updateStatus`.
+  - [x] Nối dữ liệu vào màn hình `CommunityPage.tsx`:
+    - [x] Thay thế mock posts bằng `communityApi.getPosts()` (kèm phân trang, lọc theo topic/tag, loading skeleton và empty state).
+    - [x] Form tạo bài viết: Gọi `communityApi.createPost(formData)` đính kèm ảnh tải lên backend -> Cloudinary.
+    - [x] Thả cảm xúc: Gọi `communityApi.reactPost(postId, type)` cập nhật phản hồi tức thì (optimistic update 6 cảm xúc).
+    - [x] Bình luận: Gọi `communityApi.addComment(postId, content)` hiển thị bình luận mới ngay lập tức.
+    - [x] Thẻ công thức nấu ăn đính kèm: Nhúng card xem công thức trực tiếp (`post.dishName`, `post.recipeId`).
+    - [x] Quyền xóa bài viết: Tác giả hoặc Quản trị viên có thể xóa bài viết trực tiếp trên card bài đăng.
+  - [x] Nối dữ liệu vào màn hình `CommunityModerationPage.tsx`:
+    - [x] Tải danh sách bài viết thật từ backend để kiểm duyệt.
+    - [x] Thao tác ghim bài (`togglePin`), gắn nhãn spam/ẩn bài vi phạm (`updateStatus`), xóa vĩnh viễn (`deletePost`) đồng bộ API thật.
 
 ---
 
