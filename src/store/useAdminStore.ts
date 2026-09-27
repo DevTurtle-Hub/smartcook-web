@@ -57,6 +57,7 @@ interface AdminState {
   setKpi: (kpi: Partial<AdminKPI>) => void;
   setUsers: (users: AppUserAdmin[]) => void;
   setRecipes: (recipes: DishRecipeAdmin[]) => void;
+  setCommunityPosts: (posts: CommunityPostAdmin[]) => void;
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -860,5 +861,10 @@ export const useAdminStore = create<AdminState>((set) => ({
   setRecipes: (recipes) =>
     set(() => ({
       recipes,
+    })),
+
+  setCommunityPosts: (communityPosts) =>
+    set(() => ({
+      communityPosts,
     })),
 }));

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Check,
@@ -31,12 +31,14 @@ import {
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import type { CommunityPostAdmin, ModerationReport } from '../../types/admin';
+import { communityApi } from '../../api/community.api';
 
 export const CommunityModerationPage: React.FC = () => {
   const {
     communityPosts,
     togglePostStatus,
     deleteCommunityPost,
+    setCommunityPosts,
     reports,
     resolveReport,
     users,
@@ -113,6 +115,35 @@ export const CommunityModerationPage: React.FC = () => {
   const [newTagInput, setNewTagInput] = useState('');
   const [newTagCategory, setNewTagCategory] = useState('Món Ngon');
 
+  // Load real posts from backend
+  useEffect(() => {
+    communityApi.getPosts({ limit: 50 })
+      .then((data) => {
+        if (data && data.posts && data.posts.length > 0) {
+          const mapped: CommunityPostAdmin[] = data.posts.map((p) => ({
+            id: p._id,
+            author: {
+              id: p.author?._id,
+              name: p.author?.fullName || `${p.author?.firstName || ''} ${p.author?.lastName || ''}`.trim() || 'Người dùng SmartCook',
+              avatar: p.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+              badge: p.author?.role === 'admin' ? 'Quản Trị Viên' : 'Bếp Trưởng',
+            },
+            content: p.caption,
+            image: p.images?.[0]?.url || '',
+            tags: p.tags || [],
+            likes: p.totalReactions || 0,
+            comments: p.commentsCount || 0,
+            createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString('vi-VN') : 'Vừa xong',
+            status: p.isPinned ? 'pinned' : ((p as any).status || 'published'),
+            reportCount: (p as any).reportCount || 0,
+            reportsList: [],
+          }));
+          setCommunityPosts(mapped);
+        }
+      })
+      .catch((err) => console.warn('Lỗi lấy bài viết quản trị từ backend:', err));
+  }, []);
+
   // Thống kê phân loại bài viết
   const counts = useMemo(() => {
     return {
@@ -149,22 +180,37 @@ export const CommunityModerationPage: React.FC = () => {
   }, [communityPosts, searchQuery, statusFilter, sortBy]);
 
   // Thực hiện hành động xác nhận
-  const handleExecuteConfirm = () => {
+  const handleExecuteConfirm = async () => {
     const { actionType, targetId, targetName } = confirmModal;
 
     if (actionType === 'delete_post') {
+      try {
+        await communityApi.deletePost(targetId);
+      } catch (err) {
+        console.warn('Lỗi xoá bài viết qua API:', err);
+      }
       deleteCommunityPost(targetId);
       if (viewingPost && viewingPost.id === targetId) {
         setViewingPost(null);
       }
       showToast(`Đã xóa vĩnh viễn bài đăng của "${targetName}".`);
     } else if (actionType === 'mark_spam') {
+      try {
+        await communityApi.updateStatus(targetId, 'flagged');
+      } catch (err) {
+        console.warn('Lỗi gắn nhãn spam bài viết qua API:', err);
+      }
       togglePostStatus(targetId, 'spam');
       if (viewingPost && viewingPost.id === targetId) {
         setViewingPost({ ...viewingPost, status: 'spam' });
       }
       showToast(`Đã gắn nhãn SPAM và chặn bài đăng của "${targetName}".`);
     } else if (actionType === 'hide_post') {
+      try {
+        await communityApi.updateStatus(targetId, 'hidden');
+      } catch (err) {
+        console.warn('Lỗi ẩn bài viết qua API:', err);
+      }
       togglePostStatus(targetId, 'hidden');
       if (viewingPost && viewingPost.id === targetId) {
         setViewingPost({ ...viewingPost, status: 'hidden' });
@@ -178,6 +224,19 @@ export const CommunityModerationPage: React.FC = () => {
     }
 
     setConfirmModal({ ...confirmModal, isOpen: false });
+  };
+
+  // Ghim bài viết
+  const handleTogglePinPost = async (postId: string) => {
+    try {
+      const res = await communityApi.togglePin(postId);
+      const newStatus = res?.isPinned ? 'pinned' : 'published';
+      togglePostStatus(postId, newStatus);
+      showToast(res?.isPinned ? 'Đã ghim bài viết lên đầu Bảng Tin.' : 'Đã bỏ ghim bài viết.');
+    } catch (err) {
+      console.warn('Lỗi ghim bài viết:', err);
+      showToast('Thao tác ghim thất bại.');
+    }
   };
 
   // Mở popup gửi cảnh cáo
@@ -565,6 +624,19 @@ export const CommunityModerationPage: React.FC = () => {
                               <BellRing className="w-3.5 h-3.5" />
                             </button>
 
+                            {/* Nút Ghim / Bỏ Ghim Bài Viết */}
+                            <button
+                              onClick={() => handleTogglePinPost(post.id)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                post.status === 'pinned'
+                                  ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
+                                  : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'
+                              }`}
+                              title={post.status === 'pinned' ? 'Bỏ ghim bài viết' : 'Ghim bài viết lên đầu'}
+                            >
+                              <Pin className={`w-3.5 h-3.5 ${post.status === 'pinned' ? 'fill-amber-600' : ''}`} />
+                            </button>
+
                             {/* Nút Khóa SPAM / Bỏ SPAM */}
                             {post.status !== 'spam' ? (
                               <button
@@ -586,7 +658,12 @@ export const CommunityModerationPage: React.FC = () => {
                               </button>
                             ) : (
                               <button
-                                onClick={() => {
+                                onClick={async () => {
+                                  try {
+                                    await communityApi.updateStatus(post.id, 'published');
+                                  } catch (err) {
+                                    console.warn('Lỗi gỡ nhãn spam:', err);
+                                  }
                                   togglePostStatus(post.id, 'published');
                                   showToast(`Đã gỡ nhãn Spam cho bài viết của "${post.author.name}".`);
                                 }}
