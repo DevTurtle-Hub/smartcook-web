@@ -15,6 +15,7 @@ import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { AIEnginePage } from '../pages/admin/AIEnginePage';
 import { MarketingPage } from '../pages/admin/MarketingPage';
 import { SystemSettingsPage } from '../pages/admin/SystemSettingsPage';
+import { SupermarketManagementPage } from '../pages/admin/SupermarketManagementPage';
 
 // User & Public Modules
 import { UserLandingPage } from '../pages/user/UserLandingPage';
@@ -87,6 +88,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="ai-engine" element={<AIEnginePage />} />
         <Route path="users" element={<UserManagementPage />} />
         <Route path="marketing" element={<MarketingPage />} />
+        <Route path="supermarkets" element={<SupermarketManagementPage />} />
         <Route path="settings" element={<SystemSettingsPage />} />
       </Route>
 
