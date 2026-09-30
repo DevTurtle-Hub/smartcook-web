@@ -20,6 +20,7 @@ import {
   X,
   Filter,
   UtensilsCrossed,
+  Store,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -72,6 +73,11 @@ export const AdminLayout: React.FC = () => {
       name: 'Thông Báo & Marketing',
       path: '/admin/marketing',
       icon: BellRing,
+    },
+    {
+      name: 'Chuỗi Siêu Thị GPS',
+      path: '/admin/supermarkets',
+      icon: Store,
     },
     {
       name: 'Cài Đặt Hệ Thống',

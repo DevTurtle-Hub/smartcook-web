@@ -13,8 +13,12 @@ import {
   Search,
   ShoppingCart,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  Copy,
+  Check
 } from 'lucide-react';
+import { storeApi } from '../../api/store.api';
+import { useCartStore } from '../../store/useCartStore';
 
 interface NearbySupermarketsModalProps {
   isOpen: boolean;
@@ -242,6 +246,33 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
   const [locationStatus, setLocationStatus] = useState<string>('Vị trí mặc định (Trung tâm TP.HCM)');
   const [selectedSupermarket, setSelectedSupermarket] = useState<SupermarketLocation | null>(null);
   const [searchFilter, setSearchFilter] = useState<string>('');
+  const [liveStores, setLiveStores] = useState<SupermarketLocation[]>([]);
+  const [isLoadingStores, setIsLoadingStores] = useState<boolean>(false);
+  const [isCopiedList, setIsCopiedList] = useState<boolean>(false);
+
+  // Lấy danh sách nguyên liệu từ giỏ đi chợ nếu props neededIngredients rỗng
+  const cartItems = useCartStore((state) => state.items);
+  const displayIngredients = useMemo(() => {
+    if (neededIngredients && neededIngredients.length > 0) {
+      return neededIngredients;
+    }
+    return cartItems.map((c) => ({
+      name: c.name,
+      amount: c.amount,
+      unit: c.unit,
+    }));
+  }, [neededIngredients, cartItems]);
+
+  // Sao chép danh sách đi chợ
+  const handleCopyShoppingList = () => {
+    if (displayIngredients.length === 0) return;
+    const text = displayIngredients
+      .map((item, idx) => `${idx + 1}. ${item.name}${item.amount ? ` (${item.amount}${item.unit ? ' ' + item.unit : ''})` : ''}`)
+      .join('\n');
+    navigator.clipboard?.writeText(text);
+    setIsCopiedList(true);
+    setTimeout(() => setIsCopiedList(false), 2000);
+  };
 
   // Hàm lấy vị trí thật qua Geolocation Browser
   const requestCurrentLocation = () => {
@@ -282,18 +313,64 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
     }
   }, [isOpen]);
 
-  // Tính khoảng cách và sắp xếp lấy 5 siêu thị gần nhất
+  // Tải danh sách siêu thị thật từ Backend theo GPS
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsLoadingStores(true);
+    storeApi.getNearbyStores(userCoords.lat, userCoords.lng, 35, 15)
+      .then((apiStores) => {
+        if (apiStores && apiStores.length > 0) {
+          const mapped: SupermarketLocation[] = apiStores.map((s) => {
+            let brand: any = 'other';
+            const b = (s.brand || '').toLowerCase();
+            if (b.includes('winmart') || b.includes('win')) brand = 'winmart';
+            else if (b.includes('coopmart') || b.includes('co.op') || b.includes('coop')) brand = 'coopmart';
+            else if (b.includes('bach hoa') || b.includes('bachhoaxanh')) brand = 'bachhoaxanh';
+            else if (b.includes('lotte')) brand = 'lotte';
+            else if (b.includes('aeon')) brand = 'aeon';
+            else if (b.includes('bigc') || b.includes('tops') || b.includes('go!')) brand = 'bigc';
+
+            return {
+              id: s.id,
+              name: s.name,
+              brand,
+              lat: s.latitude,
+              lng: s.longitude,
+              address: s.address,
+              distanceKm: s.distanceKm !== undefined ? s.distanceKm : calculateDistanceKm(userCoords.lat, userCoords.lng, s.latitude, s.longitude),
+              openHours: s.openHours || '06:30 - 22:00',
+              phone: s.phone || '1900 1908',
+              rating: 4.8,
+              reviewsCount: 340,
+              hasParking: true,
+              highlightTag: `Chuỗi ${s.brand || 'Siêu thị'} - Đầy đủ rau củ quả & thịt tươi sống`,
+            };
+          });
+          setLiveStores(mapped);
+        } else {
+          setLiveStores([]);
+        }
+      })
+      .catch((err) => {
+        console.warn('Lỗi lấy siêu thị gần bạn từ backend:', err);
+        setLiveStores([]);
+      })
+      .finally(() => {
+        setIsLoadingStores(false);
+      });
+  }, [isOpen, userCoords.lat, userCoords.lng]);
+
+  // Tính khoảng cách và sắp xếp lấy siêu thị gần nhất
   const nearbySupermarkets = useMemo(() => {
-    const listWithDistance = POPULAR_SUPERMARKETS.map((sm) => {
-      const dist = calculateDistanceKm(userCoords.lat, userCoords.lng, sm.lat, sm.lng);
-      return {
-        ...sm,
-        distanceKm: dist
-      };
-    });
+    const baseList = liveStores.length > 0
+      ? liveStores
+      : POPULAR_SUPERMARKETS.map((sm) => ({
+          ...sm,
+          distanceKm: calculateDistanceKm(userCoords.lat, userCoords.lng, sm.lat, sm.lng)
+        }));
 
     // Sắp xếp theo khoảng cách tăng dần
-    const sorted = listWithDistance.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+    const sorted = [...baseList].sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
 
     // Nếu có tìm kiếm theo tên hoặc chuỗi
     if (searchFilter.trim()) {
@@ -302,11 +379,11 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
         (sm) =>
           sm.name.toLowerCase().includes(filterLower) ||
           sm.address.toLowerCase().includes(filterLower)
-      ).slice(0, 5);
+      ).slice(0, 6);
     }
 
-    return sorted.slice(0, 5);
-  }, [userCoords, searchFilter]);
+    return sorted.slice(0, 6);
+  }, [liveStores, userCoords, searchFilter]);
 
   // Chọn mặc định siêu thị đầu tiên khi danh sách đổi
   useEffect(() => {
@@ -321,7 +398,7 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
 
   // URL chỉ đường qua Google Maps
   const getGoogleMapsDirUrl = (sm: SupermarketLocation) => {
-    return `https://www.google.com/maps/dir/?api=1&destination=${sm.lat},${sm.lng}&destination_place_id=${encodeURIComponent(sm.name)}`;
+    return `https://www.google.com/maps/dir/?api=1&origin=${userCoords.lat},${userCoords.lng}&destination=${sm.lat},${sm.lng}`;
   };
 
   // URL OpenStreetMap iFrame view
@@ -340,10 +417,16 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
-                <span>5 Siêu Thị & Cửa Hàng Gần Bạn Nhất</span>
-                <span className="hidden sm:inline text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  Bản đồ vệ tinh & dẫn đường
-                </span>
+                <span>Siêu Thị & Cửa Hàng Gần Bạn Nhất</span>
+                {isLoadingStores ? (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white flex items-center gap-1">
+                    <RotateCw className="w-3 h-3 animate-spin" /> Đang cập nhật GPS...
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                    {liveStores.length > 0 ? `Đã tìm thấy ${liveStores.length} siêu thị` : 'Bản đồ vệ tinh & dẫn đường'}
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-orange-100/90 flex items-center gap-1.5 mt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-amber-200" />
@@ -372,15 +455,15 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
           </div>
         </div>
 
-        {/* NGUYÊN LIỆU CẦN MUA REMINDER (NẾU CÓ) */}
-        {neededIngredients.length > 0 && (
-          <div className="px-5 py-2.5 bg-amber-50/80 border-b border-amber-200/60 flex items-center justify-between gap-2 overflow-x-auto text-xs">
+        {/* NGUYÊN LIỆU CẦN MUA REMINDER */}
+        {displayIngredients.length > 0 && (
+          <div className="px-5 py-2.5 bg-amber-50/90 border-b border-amber-200/60 flex items-center justify-between gap-3 overflow-x-auto text-xs">
             <div className="flex items-center gap-1.5 text-amber-900 font-bold shrink-0">
               <ShoppingCart className="w-4 h-4 text-orange-600" />
-              <span>Cần mua ({neededIngredients.length} món):</span>
+              <span>Cần mua ({displayIngredients.length} món):</span>
             </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 text-slate-700">
-              {neededIngredients.map((ing, i) => (
+            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 text-slate-700 flex-1">
+              {displayIngredients.map((ing, i) => (
                 <span
                   key={i}
                   className="px-2.5 py-1 bg-white rounded-lg border border-amber-200/80 text-[11px] font-semibold text-slate-800 shrink-0 shadow-2xs"
@@ -389,6 +472,14 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
                 </span>
               ))}
             </div>
+            <button
+              onClick={handleCopyShoppingList}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold shrink-0 transition-colors shadow-2xs"
+              title="Sao chép danh sách đi chợ"
+            >
+              {isCopiedList ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{isCopiedList ? 'Đã chép' : 'Sao chép'}</span>
+            </button>
           </div>
         )}
 
