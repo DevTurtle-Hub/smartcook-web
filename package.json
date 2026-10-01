@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:integration": "node scripts/testPhase1Integration.mjs"
+    "test:integration": "node scripts/testPhase1Integration.mjs",
+    "test:chat": "node scripts/testRealtimeChat.mjs"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
@@ -21,6 +22,7 @@
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
+    "socket.io-client": "^4.8.4",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
     "zustand": "^5.0.15"
