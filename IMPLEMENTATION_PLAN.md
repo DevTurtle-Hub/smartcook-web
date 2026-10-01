@@ -872,30 +872,39 @@ graph TD
 
 #### GIAI ĐOẠN 4: MODULE TRÍ TUỆ NHÂN TẠO AI (GEMINI VISION SCANNER & MASCOT CHEF ASSISTANT)
 > **Trạng Thái**: 
-> - 🟢 **Backend**: Đã có Model `ScanHistory.ts`, route `/api/v1/ai/assistant-chat`, `/api/v1/ai/scan-ingredients`, `/api/v1/ai/scan-history`.
-> - 🟢 **Frontend Web**:
->   - ĐÃ HOÀN THÀNH mascot `FloatingChefAssistant.tsx` tích hợp Gemini AI chat, hỗ trợ bảo vệ đăng nhập (Lock banner, nút đăng nhập/đăng ký, mở chat khi đã đăng nhập).
->   - ĐÃ CÓ UI `AIScanPage.tsx` và `AIEnginePage.tsx`.
-> - 🚀 **Tiến Hành**: Bổ sung hàm `scanIngredients` vào `ai.api.ts` và nối vào `AIScanPage.tsx`.
+> - 🟢 **Backend Node.js**: **ĐÃ HOÀN TẤT 100%** (Model `ScanHistory.ts`, Gemini Vision Flash SDK, `/api/v1/ai/assistant-chat`, `/api/v1/ai/scan-ingredients`, `/api/v1/ai/scan-history`).
+> - 🟢 **Frontend Web**: **ĐÃ HOÀN TẤT 100%** (API Client `src/api/ai.api.ts` mở rộng đầy đủ các hàm scan & history; Mascot `FloatingChefAssistant.tsx` AI Chef chatbox có bảo vệ đăng nhập; Trang Quét ảnh `AIScanPage.tsx` tải ảnh thật, laser scan beam, hiển thị Bounding Pins trực quan trên ảnh, 1-Click thêm vào tủ lạnh, gợi ý món ăn nấu ngay và tab Lịch sử quét; Trang Cấu hình `AIEnginePage.tsx` kết nối Live Playground chat AI thật và nhật ký quét từ backend).
+> - 🟢 **Kiểm thử**: `npm run build` trên Web đạt 100% (0 lỗi TypeScript), tương thích hoàn toàn dữ liệu Backend.
 
 ##### 1. Phía Backend (`smartcook-backend`)
-- 🟢 **`[BE ĐÃ HOÀN TẤT]`**:
+- 🟢 **`[BE ĐÃ HOÀN TẤT 100%]`**:
   - [x] Tích hợp Gemini 1.5/2.5 Flash SDK (`@google/genai`).
-  - [x] Model `src/models/ScanHistory.ts`: Lưu ảnh, nhãn nguyên liệu, độ tin cậy, món gợi ý.
+  - [x] Model `src/models/ScanHistory.ts`: Lưu ảnh, nhãn nguyên liệu, độ tin cậy, món gợi ý, tọa độ Bounding Pins.
   - [x] Endpoints Route `/api/v1/ai`:
     - [x] `POST /api/v1/ai/assistant-chat`: Chat với Đầu Bếp Trợ Lý AI kết hợp ngữ cảnh tủ lạnh và khẩu vị (Bảo vệ JWT `authenticate`).
-    - [x] `POST /api/v1/ai/scan-ingredients`: Tải ảnh tủ lạnh/bàn bếp -> Cloudinary -> Gemini Vision nhận diện nguyên liệu & gợi ý món.
-    - [x] `GET /api/v1/ai/scan-history`: Lấy lịch sử quét.
+    - [x] `POST /api/v1/ai/scan-ingredients`: Tải ảnh tủ lạnh/bàn bếp -> Cloudinary -> Gemini Vision nhận diện nguyên liệu & gợi ý món (hỗ trợ multipart file, base64, imageUrl).
+    - [x] `GET /api/v1/ai/scan-history`: Lấy lịch sử quét của người dùng.
+    - [x] `DELETE /api/v1/ai/scan-history/:id`: Xóa bản ghi lịch sử quét.
 
 ##### 2. Phía Frontend Web (`smartcook-web`)
-- 🔵 **`[FE ĐÃ HOÀN THÀNH CHATBOT - TIẾN HÀNH NỐI AI SCANNER]`**:
+- 🟢 **`[FE ĐÃ HOÀN TẤT 100% AI VISION SCANNER, CHEF CHATBOT & LIVE PLAYGROUND]`**:
   - [x] `FloatingChefAssistant.tsx`: Mascot Đầu Bếp AI tròn nổi bật ở góc phải màn hình, chat trực tiếp với `/api/v1/ai/assistant-chat`, chặn hỏi đáp khi chưa đăng nhập và điều hướng `/login`.
-  - [ ] Bổ sung hàm `scanIngredients(file: File)` vào `src/api/ai.api.ts`.
-  - [ ] Nối API vào `AIScanPage.tsx`:
-    - [ ] Gửi ảnh thật lên `/api/v1/ai/scan-ingredients`.
-    - [ ] Hiển thị kết quả bóc tách nguyên liệu thật từ Gemini Vision.
-    - [ ] Nút "Thêm vào tủ lạnh": Tự động thêm các nguyên liệu quét được vào `MyKitchenPage` (`POST /fridge/items`).
-  - [ ] Nối `AIEnginePage.tsx`: Live playground gọi `aiApi.assistantChat`.
+  - [x] File `src/api/ai.api.ts`:
+    - [x] Mở rộng hàm `scanIngredients(fileOrData)`: Gửi FormData multipart tải ảnh lên backend -> Cloudinary -> Gemini Vision.
+    - [x] Mở rộng hàm `getScanHistory(limit)`: Lấy lịch sử quét của người dùng từ MongoDB.
+    - [x] Mở rộng hàm `deleteScanHistory(id)`: Xóa bản ghi lịch sử quét.
+    - [x] Khai báo kiểu dữ liệu chuẩn xác: `ScanDetectedIngredient`, `ScanPin`, `ScanSuggestedRecipe`, `ScanIngredientResult`.
+  - [x] Nối API & Trải nghiệm thực tế tại `AIScanPage.tsx`:
+    - [x] Kéo thả hoặc tải ảnh thật từ máy tính (PNG, JPG, WEBP).
+    - [x] Hiệu ứng Laser Scanning Animation Beam trong lúc AI phân tích.
+    - [x] Hiển thị các thẻ ghim tọa độ thực phẩm Bounding Pins (`pin.top%`, `pin.left%`) trực quan đè lên ảnh gốc kèm beacon phát sáng.
+    - [x] Bảng danh sách nguyên liệu nhận diện kèm độ tin cậy (`confidence %`) và nhãn phân loại.
+    - [x] Nút "1-Click Thêm Tất Cả Vào Tủ Lạnh" & nút thêm từng nguyên liệu vào trang "Bếp Của Tôi" qua `fridgeApi.addItem`.
+    - [x] Thẻ công thức đề xuất nấu ngay (`suggestedRecipe`) dựa trên 100% nguyên liệu nhận diện kèm thời gian và lượng calo.
+    - [x] Tab "Lịch Sử Quét Của Tôi": Xem lại toàn bộ các lần quét trước hoặc xóa lịch sử.
+  - [x] Trang Quản Trị `AIEnginePage.tsx`:
+    - [x] Tab Playground: Kết nối trực tiếp với `aiApi.assistantChat` thật, gửi câu hỏi và nhận câu trả lời từ Gemini theo thời gian thực.
+    - [x] Tab Vision Scanner: Nạp nhật ký quét thực tế của người dùng từ backend (`realScanLogs`) kèm nút làm mới.
 ---
 
 #### GIAI ĐOẠN 5: TỐI ƯU HIỆU NĂNG BUNDLE, THÔNG BÁO TOAST, DUAL-MODE & KIỂM THỬ E2E
