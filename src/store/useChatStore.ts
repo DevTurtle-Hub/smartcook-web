@@ -454,8 +454,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
         conversations: s.conversations.map((conv) => {
           if (conv.id !== convId) return conv;
 
-          const alreadyHasMsg = conv.messages.some((m) => m.id === incoming.id);
-          const updatedMessages = alreadyHasMsg ? conv.messages : [...conv.messages, incoming];
+          // Check if message already exists by real server ID, OR matches an optimistic temp message
+          const existingMsgIndex = conv.messages.findIndex(
+            (m) =>
+              m.id === incoming.id ||
+              (isMe && m.id.startsWith('temp-') && m.text === incoming.text)
+          );
+
+          let updatedMessages: ChatMessage[];
+          if (existingMsgIndex !== -1) {
+            // Replace optimistic temp message with the server confirmed message (prevents duplicates)
+            updatedMessages = conv.messages.map((m, idx) =>
+              idx === existingMsgIndex ? incoming : m
+            );
+          } else {
+            updatedMessages = [...conv.messages, incoming];
+          }
 
           return {
             ...conv,
