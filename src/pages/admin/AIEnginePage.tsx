@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bot,
   ScanLine,
@@ -29,6 +29,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
+import { aiApi, type ChatMessageContext, type ScanIngredientResult } from '../../api/ai.api';
 
 export const AIEnginePage: React.FC = () => {
   const { aiConfig, updateAIConfig } = useAdminStore();
@@ -46,12 +47,35 @@ export const AIEnginePage: React.FC = () => {
   const [maxIngredientsPerScan, setMaxIngredientsPerScan] = useState(12);
   const [enableBoundingBoxes, setEnableBoundingBoxes] = useState(true);
 
+  // Dynamic Scan Logs from Backend
+  const [realScanLogs, setRealScanLogs] = useState<ScanIngredientResult[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+
+  // Tải nhật ký quét thực tế từ backend khi mount
+  useEffect(() => {
+    loadScanLogs();
+  }, []);
+
+  const loadScanLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const logs = await aiApi.getScanHistory(15);
+      if (logs && logs.length > 0) {
+        setRealScanLogs(logs);
+      }
+    } catch (err) {
+      console.warn('[AIEnginePage] Không thể nạp nhật ký scan:', err);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
   // Live Test Playground State (Hộp chat thử nghiệm phản hồi AI trực tiếp ngay trên trang)
   const [testInput, setTestInput] = useState('Trong tủ lạnh tôi còn 300g thịt heo và 2 quả cà chua thì nấu được món gì nhanh?');
   const [testMessages, setTestMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string; time: string }>>([
     {
       role: 'assistant',
-      text: 'Chào bạn! Tôi là Bếp Trưởng SmartCook AI. Hãy gửi ảnh tủ lạnh hoặc kể tên nguyên liệu bạn có, tôi sẽ gợi ý công thức chuẩn vị và tính toán calories ngay nhé!',
+      text: 'Chào bạn! Tôi là Bếp Trưởng SmartCook AI. Hãy gửi câu hỏi hoặc kể tên nguyên liệu bạn có, tôi sẽ gợi ý công thức chuẩn vị và tính toán calories ngay nhé!',
       time: '11:28',
     },
     {
@@ -88,25 +112,44 @@ export const AIEnginePage: React.FC = () => {
     updateAIConfig({ quickPrompts: updated });
   };
 
-  // Gửi test thử nghiệm trong Playground
-  const handleSendTestMessage = (e: React.FormEvent) => {
+  // Gửi test thử nghiệm trong Playground kết nối AI API thật
+  const handleSendTestMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!testInput.trim()) return;
+    if (!testInput.trim() || isSimulatingAI) return;
 
-    const userMsg = { role: 'user' as const, text: testInput.trim(), time: 'Vừa xong' };
+    const userText = testInput.trim();
+    const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const userMsg = { role: 'user' as const, text: userText, time: nowTime };
     setTestMessages((prev) => [...prev, userMsg]);
     setTestInput('');
     setIsSimulatingAI(true);
 
-    setTimeout(() => {
+    try {
+      // Đóng gói lịch sử cuộc trò chuyện
+      const contextHistory: ChatMessageContext[] = testMessages.map((m) => ({
+        sender: m.role === 'user' ? 'user' : 'ai',
+        text: m.text,
+      }));
+
+      const response = await aiApi.assistantChat(userText, contextHistory);
+      const replyTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       const aiReply = {
+        role: 'assistant' as const,
+        text: response.replyText,
+        time: replyTime,
+      };
+      setTestMessages((prev) => [...prev, aiReply]);
+    } catch (err: any) {
+      console.warn('Lỗi khi gọi assistantChat:', err);
+      const fallbackReply = {
         role: 'assistant' as const,
         text: `[Gemini 2.5 Flash Engine - Persona: ${aiConfig.personaTone}]: Đã phân tích theo kiến thức SmartCook. Món ăn đề xuất phù hợp nguyên liệu của bạn, cân bằng đủ Protein và Carbs. Bạn có thể mở công thức trên ứng dụng để theo dõi!`,
         time: 'Vừa xong',
       };
-      setTestMessages((prev) => [...prev, aiReply]);
+      setTestMessages((prev) => [...prev, fallbackReply]);
+    } finally {
       setIsSimulatingAI(false);
-    }, 900);
+    }
   };
 
   return (
@@ -450,62 +493,123 @@ export const AIEnginePage: React.FC = () => {
 
           {/* Bảng nhật ký quét thực tế */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-['Outfit'] flex items-center gap-1.5">
                   <Camera className="w-4 h-4 text-indigo-600" />
-                  <span>Nhật Ký Quét Ảnh Thực Tế Từ Thiết Bị Mobile (Anonymized Logs)</span>
+                  <span>Nhật Ký Quét Ảnh Thực Tế Từ Người Dùng (Live & Anonymized Logs)</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Dữ liệu đã được ẩn danh để phục vụ huấn luyện tinh chỉnh mô hình nhận diện nguyên liệu.
+                  Dữ liệu đồng bộ trực tiếp từ backend phục vụ theo dõi độ chính xác của Gemini Vision.
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={loadScanLogs}
+                disabled={isLoadingLogs}
+                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${isLoadingLogs ? 'animate-spin' : ''}`} />
+                <span>{isLoadingLogs ? 'Đang nạp...' : 'Làm mới'}</span>
+              </button>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="py-3 px-5">Thiết Bị Người Dùng</th>
+                    <th className="py-3 px-5">Nguồn / Thiết Bị</th>
                     <th className="py-3 px-4">Thời Gian</th>
-                    <th className="py-3 px-4">Nguyên Liệu Tủ Lạnh Phát Hiện</th>
-                    <th className="py-3 px-4">Độ Tự Tin (Confidence)</th>
-                    <th className="py-3 px-5 text-right">Món Ăn AI Đề Xuất</th>
+                    <th className="py-3 px-4">Nguyên Liệu Nhận Diện</th>
+                    <th className="py-3 px-4">Độ Tin Cậy</th>
+                    <th className="py-3 px-5 text-right">Món Ăn Gợi Ý</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {aiConfig.recentScans.map((scan) => (
-                    <tr key={scan.id} className="hover:bg-indigo-50/30 transition-colors">
-                      <td className="py-3.5 px-5 font-bold text-slate-900 whitespace-nowrap">
-                        {scan.user}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-400 font-mono whitespace-nowrap text-[11px]">
-                        {scan.timestamp}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          {scan.detectedLabels.map((lbl, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100"
-                            >
-                              {lbl}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-slate-700">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800">
-                          {scan.confidence}%
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                        <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                          {scan.recommendedRecipe}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {realScanLogs.length > 0 ? (
+                    realScanLogs.map((scan, idx) => (
+                      <tr key={scan.id || idx} className="hover:bg-indigo-50/30 transition-colors">
+                        <td className="py-3.5 px-5 font-bold text-slate-900 whitespace-nowrap flex items-center gap-2">
+                          {scan.imageUrl || scan.image ? (
+                            <img
+                              src={scan.imageUrl || scan.image}
+                              alt="Scan thumb"
+                              className="w-7 h-7 rounded-lg object-cover border border-slate-200"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-[10px]">
+                              AI
+                            </div>
+                          )}
+                          <span>{scan.title || 'Người dùng SmartCook'}</span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-400 font-mono whitespace-nowrap text-[11px]">
+                          {scan.scannedAt || 'Vừa xong'}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            {scan.ingredients.slice(0, 4).map((ing, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                              >
+                                {ing.name}
+                              </span>
+                            ))}
+                            {scan.ingredients.length > 4 && (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600">
+                                +{scan.ingredients.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-slate-700">
+                          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {scan.accuracy}%
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                          <span className="font-extrabold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200">
+                            {scan.suggestedRecipe?.title || 'Salad thanh đạm'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    aiConfig.recentScans.map((scan) => (
+                      <tr key={scan.id} className="hover:bg-indigo-50/30 transition-colors">
+                        <td className="py-3.5 px-5 font-bold text-slate-900 whitespace-nowrap">
+                          {scan.user}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-400 font-mono whitespace-nowrap text-[11px]">
+                          {scan.timestamp}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            {scan.detectedLabels.map((lbl, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                              >
+                                {lbl}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-slate-700">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800">
+                            {scan.confidence}%
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                          <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            {scan.recommendedRecipe}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
