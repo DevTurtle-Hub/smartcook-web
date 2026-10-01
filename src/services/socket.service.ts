@@ -13,22 +13,24 @@ class SocketService {
   private typingListeners = new Set<(data: { conversationId: string; userId: string; userName: string }) => void>();
   private stopTypingListeners = new Set<(data: { conversationId: string; userId: string }) => void>();
 
+  // Community live feed persistent listener registries
+  private communityPostListeners = new Set<(data: { post: any }) => void>();
+  private postReactionListeners = new Set<(data: { postId: string; totalReactions: number; reactionCounts: Record<string, number>; userId: string; reactionType: string | null }) => void>();
+  private postCommentListeners = new Set<(data: { postId: string; comment: any; commentsCount: number }) => void>();
+  private postDeletedListeners = new Set<(data: { postId: string }) => void>();
+
   /**
-   * Connect to WebSocket server with JWT authentication
+   * Connect to WebSocket server with JWT authentication (or as guest)
    */
   public connect(tokenOverride?: string): Socket | null {
     const token = tokenOverride || useAuthStore.getState().accessToken || localStorage.getItem('smartcook_token');
 
-    if (!token) {
-      return null;
-    }
-
     // If socket exists and connected with the same token, reuse it
-    if (this.socket && this.currentToken === token && (this.socket.connected || this.socket.active)) {
+    if (this.socket && this.currentToken === (token || '') && (this.socket.connected || this.socket.active)) {
       return this.socket;
     }
 
-    this.currentToken = token;
+    this.currentToken = token || '';
 
     // Disconnect previous socket cleanly
     if (this.socket) {
@@ -39,7 +41,7 @@ class SocketService {
 
     this.socket = io(SOCKET_URL, {
       auth: {
-        token: `Bearer ${token}`,
+        token: token ? `Bearer ${token}` : undefined,
       },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -57,7 +59,7 @@ class SocketService {
       }
     });
 
-    // Forward events to persistent listeners
+    // Forward chat events to persistent listeners
     this.socket.on('new_message', (msg: any) => {
       this.messageListeners.forEach((fn) => {
         try {
@@ -84,6 +86,47 @@ class SocketService {
           fn(data);
         } catch (e) {
           console.error('Error in user_stop_typing listener:', e);
+        }
+      });
+    });
+
+    // Forward community realtime events to persistent listeners
+    this.socket.on('new_community_post', (data: any) => {
+      this.communityPostListeners.forEach((fn) => {
+        try {
+          fn(data);
+        } catch (e) {
+          console.error('Error in new_community_post listener:', e);
+        }
+      });
+    });
+
+    this.socket.on('post_reaction_updated', (data: any) => {
+      this.postReactionListeners.forEach((fn) => {
+        try {
+          fn(data);
+        } catch (e) {
+          console.error('Error in post_reaction_updated listener:', e);
+        }
+      });
+    });
+
+    this.socket.on('new_post_comment', (data: any) => {
+      this.postCommentListeners.forEach((fn) => {
+        try {
+          fn(data);
+        } catch (e) {
+          console.error('Error in new_post_comment listener:', e);
+        }
+      });
+    });
+
+    this.socket.on('post_deleted', (data: any) => {
+      this.postDeletedListeners.forEach((fn) => {
+        try {
+          fn(data);
+        } catch (e) {
+          console.error('Error in post_deleted listener:', e);
         }
       });
     });
@@ -216,7 +259,7 @@ class SocketService {
   }
 
   /**
-   * Listen to incoming messages (persistent across reconnects)
+   * Listen to incoming chat messages
    */
   public onNewMessage(callback: (message: any) => void) {
     this.messageListeners.add(callback);
@@ -228,7 +271,7 @@ class SocketService {
   }
 
   /**
-   * Listen to typing indicator events (persistent across reconnects)
+   * Listen to typing indicator events
    */
   public onUserTyping(callback: (data: { conversationId: string; userId: string; userName: string }) => void) {
     this.typingListeners.add(callback);
@@ -240,7 +283,7 @@ class SocketService {
   }
 
   /**
-   * Listen to stop typing indicator events (persistent across reconnects)
+   * Listen to stop typing indicator events
    */
   public onUserStopTyping(callback: (data: { conversationId: string; userId: string }) => void) {
     this.stopTypingListeners.add(callback);
@@ -249,6 +292,45 @@ class SocketService {
 
   public offUserStopTyping(callback: (data: any) => void) {
     this.stopTypingListeners.delete(callback);
+  }
+
+  /**
+   * Community Live Feed Real-time Subscriptions
+   */
+  public onCommunityPost(callback: (data: { post: any }) => void) {
+    this.communityPostListeners.add(callback);
+    this.connect();
+  }
+
+  public offCommunityPost(callback: (data: { post: any }) => void) {
+    this.communityPostListeners.delete(callback);
+  }
+
+  public onPostReaction(callback: (data: { postId: string; totalReactions: number; reactionCounts: Record<string, number>; userId: string; reactionType: string | null }) => void) {
+    this.postReactionListeners.add(callback);
+    this.connect();
+  }
+
+  public offPostReaction(callback: (data: any) => void) {
+    this.postReactionListeners.delete(callback);
+  }
+
+  public onPostComment(callback: (data: { postId: string; comment: any; commentsCount: number }) => void) {
+    this.postCommentListeners.add(callback);
+    this.connect();
+  }
+
+  public offPostComment(callback: (data: any) => void) {
+    this.postCommentListeners.delete(callback);
+  }
+
+  public onPostDeleted(callback: (data: { postId: string }) => void) {
+    this.postDeletedListeners.add(callback);
+    this.connect();
+  }
+
+  public offPostDeleted(callback: (data: any) => void) {
+    this.postDeletedListeners.delete(callback);
   }
 }
 

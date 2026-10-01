@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test:integration": "node scripts/testPhase1Integration.mjs",
-    "test:chat": "node scripts/testRealtimeChat.mjs"
+    "test:chat": "node scripts/testRealtimeChat.mjs",
+    "test:community": "node scripts/testCommunityRealtime.mjs"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
