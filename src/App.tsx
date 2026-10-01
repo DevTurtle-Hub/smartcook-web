@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './routes/AppRoutes';
 import { FloatingChefAssistant } from './components/ai/FloatingChefAssistant';
+import { ChatToastNotification } from './components/chat/ChatToastNotification';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +19,7 @@ export function App() {
       <BrowserRouter>
         <AppRoutes />
         <FloatingChefAssistant />
+        <ChatToastNotification />
       </BrowserRouter>
     </QueryClientProvider>
   );
