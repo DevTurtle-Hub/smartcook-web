@@ -36,9 +36,16 @@ interface UserHeaderProps {
 export const UserHeader: React.FC<UserHeaderProps> = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuthStore();
   const { items: cartItems, toggleCart, openCart, getTotalPrice } = useCartStore();
-  const { toggleChat, conversations } = useChatStore();
+  const { toggleChat, conversations, initSocket, loadConversations } = useChatStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initSocket();
+      loadConversations();
+    }
+  }, [isAuthenticated, initSocket, loadConversations]);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

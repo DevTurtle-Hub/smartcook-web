@@ -1,13 +1,18 @@
 import { create } from 'zustand';
+import { chatApi, ApiConversationItem, ApiMessageItem } from '../api/chat.api';
+import { socketService } from '../services/socket.service';
+import { useAuthStore } from './useAuthStore';
 
 export interface ChatMessage {
   id: string;
+  conversationId: string;
   senderId: string;
   senderName: string;
   senderAvatar?: string;
   text: string;
   createdAt: string;
   isMe: boolean;
+  imageUri?: string;
   recipeAttachment?: {
     title: string;
     image?: string;
@@ -15,262 +20,420 @@ export interface ChatMessage {
 }
 
 export interface ChatConversation {
-  id: string;
+  id: string; // Conversation MongoDB ID
   partnerId: string;
   partnerName: string;
   partnerAvatar?: string;
-  partnerRole?: string; // 'Bếp Trưởng', 'Chuyên Gia Dinh Dưỡng', etc.
+  partnerRole?: string; // e.g. 'Bếp Trưởng', 'Thành Viên'
   isOnline: boolean;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
   messages: ChatMessage[];
+  isLoaded?: boolean;
 }
 
 interface ChatState {
   isOpen: boolean;
   conversations: ChatConversation[];
   activeConversationId: string | null;
-  
+  isLoading: boolean;
+  isSending: boolean;
+  typingStatus: Record<string, string>; // conversationId -> userName typing
+
   // Actions
   openChat: () => void;
   closeChat: () => void;
   toggleChat: () => void;
-  setActiveConversation: (id: string) => void;
-  startChatWithUser: (user: { id: string; name: string; avatar?: string; role?: string }) => void;
-  sendMessage: (conversationId: string, text: string) => void;
+  setActiveConversation: (id: string) => Promise<void>;
+  loadConversations: () => Promise<void>;
+  loadMessages: (conversationId: string) => Promise<void>;
+  startChatWithUser: (user: { id: string; name: string; avatar?: string; role?: string }) => Promise<void>;
+  sendMessage: (conversationId: string, text: string, imageUri?: string) => Promise<void>;
+  handleIncomingMessage: (msg: any) => void;
   markAsRead: (conversationId: string) => void;
+  setTyping: (conversationId: string, userName: string) => void;
+  clearTyping: (conversationId: string) => void;
+  initSocket: () => void;
 }
 
-const INITIAL_CONVERSATIONS: ChatConversation[] = [
-  {
-    id: 'conv-mai',
-    partnerId: 'u1',
-    partnerName: 'Nguyễn Thị Mai',
-    partnerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-    partnerRole: 'Yêu Bếp & Cơm Nhà',
-    isOnline: true,
-    lastMessage: 'Nước dừa xiêm nấu ra màu cánh gián tự nhiên đỉnh thật bạn ơi!',
-    lastMessageTime: '10 phút trước',
-    unreadCount: 1,
-    messages: [
-      {
-        id: 'm1',
-        senderId: 'u1',
-        senderName: 'Nguyễn Thị Mai',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-        text: 'Chào bạn! Mình thấy bạn cũng thích nấu mấy món kho gia đình đúng không?',
-        createdAt: '10:15',
-        isMe: false,
-      },
-      {
-        id: 'm2',
-        senderId: 'me',
-        senderName: 'Tôi',
-        text: 'Đúng rồi bạn, mình hay xem công thức trên SmartCook rồi nấu theo.',
-        createdAt: '10:18',
-        isMe: true,
-      },
-      {
-        id: 'm3',
-        senderId: 'u1',
-        senderName: 'Nguyễn Thị Mai',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-        text: 'Nước dừa xiêm nấu ra màu cánh gián tự nhiên đỉnh thật bạn ơi!',
-        createdAt: '10:20',
-        isMe: false,
-      }
-    ]
-  },
-  {
-    id: 'conv-hoang',
-    partnerId: 'u2',
-    partnerName: 'Trần Văn Hoàng',
-    partnerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-    partnerRole: 'Eat Clean & Fitness Chef',
-    isOnline: true,
-    lastMessage: 'Ức gà áp chảo sốt bơ tỏi ướp thêm chút mật ong ăn mềm lắm.',
-    lastMessageTime: '1 giờ trước',
-    unreadCount: 0,
-    messages: [
-      {
-        id: 'mh1',
-        senderId: 'u2',
-        senderName: 'Trần Văn Hoàng',
-        senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-        text: 'Chào bro! Tính năng scan tủ lạnh của SmartCook gợi ý chuẩn bài phết nhỉ.',
-        createdAt: '09:00',
-        isMe: false,
-      },
-      {
-        id: 'mh2',
-        senderId: 'me',
-        senderName: 'Tôi',
-        text: 'Chuẩn luôn, đỡ phải nghĩ xem nay ăn gì.',
-        createdAt: '09:05',
-        isMe: true,
-      },
-      {
-        id: 'mh3',
-        senderId: 'u2',
-        senderName: 'Trần Văn Hoàng',
-        senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-        text: 'Ức gà áp chảo sốt bơ tỏi ướp thêm chút mật ong ăn mềm lắm.',
-        createdAt: '09:12',
-        isMe: false,
-      }
-    ]
-  },
-  {
-    id: 'conv-hung',
-    partnerId: 'c-hung',
-    partnerName: 'Lê Tuấn Hưng',
-    partnerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-    partnerRole: 'Chuyên Gia Nấu Nướng',
-    isOnline: false,
-    lastMessage: 'Hôm nào có dịp mình chia sẻ thêm mẹo kho thịt không cần thắng đường nha!',
-    lastMessageTime: 'Hôm qua',
-    unreadCount: 0,
-    messages: [
-      {
-        id: 'm-hung-1',
-        senderId: 'c-hung',
-        senderName: 'Lê Tuấn Hưng',
-        senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-        text: 'Hôm nào có dịp mình chia sẻ thêm mẹo kho thịt không cần thắng đường nha!',
-        createdAt: 'Hôm qua',
-        isMe: false,
-      }
-    ]
-  }
-];
+let isSocketSubscribed = false;
 
 export const useChatStore = create<ChatState>((set, get) => ({
   isOpen: false,
-  conversations: INITIAL_CONVERSATIONS,
-  activeConversationId: 'conv-mai',
+  conversations: [],
+  activeConversationId: null,
+  isLoading: false,
+  isSending: false,
+  typingStatus: {},
 
-  openChat: () => set({ isOpen: true }),
-  closeChat: () => set({ isOpen: false }),
-  toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
-
-  setActiveConversation: (id: string) => {
-    set({ activeConversationId: id, isOpen: true });
-    get().markAsRead(id);
+  openChat: () => {
+    set({ isOpen: true });
+    get().initSocket();
+    if (get().conversations.length === 0) {
+      get().loadConversations();
+    }
   },
 
-  startChatWithUser: (targetUser) => {
-    const { conversations } = get();
-    const existing = conversations.find(
-      (c) => c.partnerId === targetUser.id || c.partnerName.toLowerCase() === targetUser.name.toLowerCase()
-    );
+  closeChat: () => {
+    set({ isOpen: false });
+  },
 
-    if (existing) {
-      set({
-        activeConversationId: existing.id,
-        isOpen: true,
-      });
-      get().markAsRead(existing.id);
-      return;
+  toggleChat: () => {
+    const nextState = !get().isOpen;
+    if (nextState) {
+      get().openChat();
+    } else {
+      get().closeChat();
     }
+  },
 
-    const newConvId = `conv-${Date.now()}`;
-    const newConv: ChatConversation = {
-      id: newConvId,
-      partnerId: targetUser.id,
-      partnerName: targetUser.name,
-      partnerAvatar: targetUser.avatar,
-      partnerRole: targetUser.role || 'Thành Viên Bếp SmartCook',
-      isOnline: true,
-      lastMessage: 'Bắt đầu cuộc trò chuyện ẩm thực...',
-      lastMessageTime: 'Vừa xong',
-      unreadCount: 0,
-      messages: [
-        {
-          id: `m-init-${Date.now()}`,
-          senderId: targetUser.id,
-          senderName: targetUser.name,
-          senderAvatar: targetUser.avatar,
-          text: `Xin chào! Rất vui được kết nối cùng bạn trên SmartCook 🍳`,
-          createdAt: 'Vừa xong',
-          isMe: false,
-        }
-      ]
-    };
+  initSocket: () => {
+    const token = useAuthStore.getState().accessToken;
+    if (!token) return;
 
-    set({
-      conversations: [newConv, ...conversations],
-      activeConversationId: newConvId,
-      isOpen: true,
+    socketService.connect(token);
+
+    if (isSocketSubscribed) return;
+    isSocketSubscribed = true;
+
+    socketService.onNewMessage((msg: any) => {
+      console.log('💬 [useChatStore] Received new_message:', msg);
+      get().handleIncomingMessage(msg);
+    });
+
+    socketService.onUserTyping((data: { conversationId: string; userId: string; userName: string }) => {
+      if (data?.conversationId && data?.userName) {
+        get().setTyping(data.conversationId, data.userName);
+      }
+    });
+
+    socketService.onUserStopTyping((data: { conversationId: string; userId: string }) => {
+      if (data?.conversationId) {
+        get().clearTyping(data.conversationId);
+      }
     });
   },
 
-  sendMessage: (conversationId: string, text: string) => {
-    if (!text.trim()) return;
+  setActiveConversation: async (id: string) => {
+    set({ activeConversationId: id, isOpen: true });
+    socketService.joinRoom(id);
+    get().markAsRead(id);
+    await get().loadMessages(id);
+  },
 
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: 'me',
-      senderName: 'Tôi',
-      text: text.trim(),
-      createdAt: 'Vừa xong',
-      isMe: true,
-    };
+  loadConversations: async () => {
+    const auth = useAuthStore.getState();
+    if (!auth.isAuthenticated) return;
 
-    set((state) => ({
-      conversations: state.conversations.map((conv) => {
-        if (conv.id !== conversationId) return conv;
+    try {
+      set({ isLoading: true });
+      get().initSocket();
+
+      const items: ApiConversationItem[] = await chatApi.getConversations();
+
+      const currentConversations = get().conversations;
+      const mapped: ChatConversation[] = items.map((item) => {
+        const existing = currentConversations.find((c) => c.id === item.conversationId);
         return {
-          ...conv,
-          lastMessage: text.trim(),
-          lastMessageTime: 'Vừa xong',
-          messages: [...conv.messages, newMsg]
+          id: item.conversationId,
+          partnerId: item.user?.id || item.id,
+          partnerName: item.user?.name || 'Đầu bếp SmartCook',
+          partnerAvatar: item.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+          partnerRole: item.user?.badge || (item.user?.isChef ? 'Bếp Trưởng' : 'Thành Viên Bếp'),
+          isOnline: item.isOnline !== false,
+          lastMessage: item.lastMessage || 'Chưa có tin nhắn',
+          lastMessageTime: item.lastMessageTime || 'Vừa xong',
+          unreadCount: item.unreadCount || 0,
+          messages: existing?.messages || [],
+          isLoaded: existing?.isLoaded || false,
         };
-      })
-    }));
+      });
 
-    // Giả lập đối phương phản hồi tự động nếu cần sau 1.5s
-    setTimeout(() => {
-      const currentConv = get().conversations.find((c) => c.id === conversationId);
-      if (!currentConv) return;
-      
-      const botReplies = [
-        'Ý tưởng nấu món này tuyệt quá bạn ơi! 🥘',
-        'Cảm ơn bạn đã chia sẻ nhé, để tối nay mình thử làm xem sao ✨',
-        'Mẹo này hay thật, công nhận nấu ăn bằng SmartCook tiện hơn hẳn 🥰',
-        'Bạn có cần thêm gợi ý nguyên liệu gì trong tủ lạnh không?'
-      ];
-      const randomReply = botReplies[Math.floor(Math.random() * botReplies.length)];
+      set({ conversations: mapped, isLoading: false });
 
-      const replyMsg: ChatMessage = {
-        id: `reply-${Date.now()}`,
-        senderId: currentConv.partnerId,
-        senderName: currentConv.partnerName,
-        senderAvatar: currentConv.partnerAvatar,
-        text: randomReply,
-        createdAt: 'Vừa xong',
-        isMe: false,
-      };
+      // If no active conversation selected yet and we have conversations, pick the first
+      const { activeConversationId } = get();
+      if (!activeConversationId && mapped.length > 0) {
+        const firstId = mapped[0].id;
+        set({ activeConversationId: firstId });
+        socketService.joinRoom(firstId);
+        get().loadMessages(firstId);
+      }
+    } catch (error) {
+      console.error('❌ [useChatStore] Failed to load conversations:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  loadMessages: async (conversationId: string) => {
+    if (!conversationId) return;
+
+    try {
+      const msgs: ApiMessageItem[] = await chatApi.getMessages(conversationId);
+      const currentUser = useAuthStore.getState().user;
+      const currentUserId = (currentUser?._id || '').toString();
+
+      const mappedMessages: ChatMessage[] = msgs.map((m) => {
+        const sId = (m.sender?.id || '').toString();
+        const isMe = sId ? sId === currentUserId : m.isMe;
+
+        return {
+          id: m.id,
+          conversationId,
+          senderId: sId,
+          senderName: m.sender?.name || (isMe ? 'Tôi' : 'Đối phương'),
+          senderAvatar: m.sender?.avatar,
+          text: m.text,
+          imageUri: m.imageUri,
+          createdAt: m.timestamp || 'Vừa xong',
+          isMe,
+        };
+      });
 
       set((state) => ({
         conversations: state.conversations.map((conv) => {
           if (conv.id !== conversationId) return conv;
           return {
             ...conv,
-            lastMessage: randomReply,
-            lastMessageTime: 'Vừa xong',
-            messages: [...conv.messages, replyMsg]
+            messages: mappedMessages,
+            isLoaded: true,
           };
-        })
+        }),
       }));
-    }, 1200);
+    } catch (error) {
+      console.error(`❌ [useChatStore] Failed to load messages for ${conversationId}:`, error);
+    }
+  },
+
+  startChatWithUser: async (targetUser) => {
+    const auth = useAuthStore.getState();
+    if (!auth.isAuthenticated || !auth.user) {
+      alert('Vui lòng đăng nhập để bắt đầu trò chuyện cùng cộng đồng đầu bếp!');
+      return;
+    }
+
+    try {
+      get().initSocket();
+
+      // Check if conversation already exists in current list
+      const { conversations } = get();
+      const existing = conversations.find(
+        (c) => c.partnerId === targetUser.id || (targetUser.name && c.partnerName.toLowerCase() === targetUser.name.toLowerCase())
+      );
+
+      if (existing) {
+        set({
+          activeConversationId: existing.id,
+          isOpen: true,
+        });
+        socketService.joinRoom(existing.id);
+        get().markAsRead(existing.id);
+        await get().loadMessages(existing.id);
+        return;
+      }
+
+      // Call backend to get or create 1-1 conversation
+      const res = await chatApi.getOrCreateDirectChat(targetUser.id);
+      const convId = res.conversationId;
+
+      const newConv: ChatConversation = {
+        id: convId,
+        partnerId: res.user?.id || targetUser.id,
+        partnerName: res.user?.name || targetUser.name,
+        partnerAvatar: res.user?.avatar || targetUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        partnerRole: res.user?.badge || targetUser.role || 'Thành Viên Bếp SmartCook',
+        isOnline: true,
+        lastMessage: res.lastMessage || 'Bắt đầu cuộc trò chuyện ẩm thực...',
+        lastMessageTime: res.lastMessageTime || 'Vừa xong',
+        unreadCount: 0,
+        messages: [],
+        isLoaded: false,
+      };
+
+      // Add to store
+      set((state) => ({
+        conversations: [newConv, ...state.conversations.filter((c) => c.id !== convId)],
+        activeConversationId: convId,
+        isOpen: true,
+      }));
+
+      socketService.joinRoom(convId);
+      await get().loadMessages(convId);
+    } catch (error) {
+      console.error('❌ [useChatStore] Failed to start direct chat:', error);
+      alert('Không thể khởi tạo cuộc hội thoại. Vui lòng thử lại sau.');
+    }
+  },
+
+  sendMessage: async (conversationId: string, text: string, imageUri?: string) => {
+    if (!text.trim() && !imageUri) return;
+    const cleanText = text.trim();
+
+    const auth = useAuthStore.getState();
+    const currentUser = auth.user;
+    const currentUserId = (currentUser?._id || '').toString();
+    const currentUserName = currentUser?.fullName || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() || 'Tôi';
+    const currentUserAvatar = currentUser?.avatar;
+
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: ChatMessage = {
+      id: tempId,
+      conversationId,
+      senderId: currentUserId,
+      senderName: currentUserName,
+      senderAvatar: currentUserAvatar,
+      text: cleanText,
+      imageUri,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMe: true,
+    };
+
+    // Optimistically add message
+    set((state) => ({
+      conversations: state.conversations.map((conv) => {
+        if (conv.id !== conversationId) return conv;
+        return {
+          ...conv,
+          lastMessage: cleanText || '[Hình ảnh]',
+          lastMessageTime: 'Vừa xong',
+          messages: [...conv.messages, optimisticMessage],
+        };
+      }),
+    }));
+
+    try {
+      set({ isSending: true });
+
+      // Try WebSocket first
+      const socketRes = await socketService.sendMessage(conversationId, cleanText, imageUri);
+
+      if (socketRes?.success && socketRes.data) {
+        const savedMsg = socketRes.data;
+        // Replace optimistic message with actual message from server
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            return {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.id === tempId
+                  ? {
+                      ...m,
+                      id: savedMsg.id || savedMsg._id || m.id,
+                      createdAt: savedMsg.timestamp || m.createdAt,
+                    }
+                  : m
+              ),
+            };
+          }),
+        }));
+      } else {
+        // Fallback to REST API
+        console.warn('⚠️ [useChatStore] WebSocket send failed, falling back to REST');
+        const restMsg = await chatApi.sendMessageFallback(conversationId, cleanText, imageUri);
+        if (restMsg) {
+          set((state) => ({
+            conversations: state.conversations.map((conv) => {
+              if (conv.id !== conversationId) return conv;
+              return {
+                ...conv,
+                messages: conv.messages.map((m) =>
+                  m.id === tempId
+                    ? {
+                        ...m,
+                        id: restMsg.id || m.id,
+                        createdAt: restMsg.timestamp || m.createdAt,
+                      }
+                    : m
+                ),
+              };
+            }),
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('❌ [useChatStore] Failed to send message:', error);
+    } finally {
+      set({ isSending: false });
+    }
+  },
+
+  handleIncomingMessage: (msg: any) => {
+    if (!msg?.conversationId) return;
+
+    const convId = (msg.conversationId._id || msg.conversationId).toString();
+    const currentUser = useAuthStore.getState().user;
+    const currentUserId = (currentUser?._id || '').toString();
+
+    const senderObj = msg.sender || {};
+    const senderId = (senderObj._id || senderObj.id || msg.senderId || '').toString();
+    const isMe = senderId === currentUserId;
+
+    const incoming: ChatMessage = {
+      id: (msg._id || msg.id || `msg-${Date.now()}`).toString(),
+      conversationId: convId,
+      senderId,
+      senderName: senderObj.name || senderObj.fullName || (isMe ? 'Tôi' : 'Đối phương'),
+      senderAvatar: senderObj.avatar,
+      text: msg.text || '',
+      imageUri: msg.imageUri,
+      createdAt: msg.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMe,
+    };
+
+    const state = get();
+    const exists = state.conversations.some((c) => c.id === convId);
+
+    if (!exists) {
+      // New conversation created by another user, refresh conversations list
+      get().loadConversations();
+      return;
+    }
+
+    const isCurrentActive = state.isOpen && state.activeConversationId === convId;
+
+    set((s) => ({
+      conversations: s.conversations.map((conv) => {
+        if (conv.id !== convId) return conv;
+
+        // Prevent duplicate if message already present
+        const alreadyHasMsg = conv.messages.some((m) => m.id === incoming.id);
+        const updatedMessages = alreadyHasMsg ? conv.messages : [...conv.messages, incoming];
+
+        return {
+          ...conv,
+          lastMessage: incoming.text || '[Hình ảnh]',
+          lastMessageTime: 'Vừa xong',
+          unreadCount: isCurrentActive || isMe ? conv.unreadCount : conv.unreadCount + 1,
+          messages: updatedMessages,
+        };
+      }),
+    }));
   },
 
   markAsRead: (conversationId: string) => {
     set((state) => ({
       conversations: state.conversations.map((conv) =>
         conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
-      )
+      ),
     }));
-  }
+  },
+
+  setTyping: (conversationId: string, userName: string) => {
+    set((state) => ({
+      typingStatus: {
+        ...state.typingStatus,
+        [conversationId]: userName,
+      },
+    }));
+  },
+
+  clearTyping: (conversationId: string) => {
+    set((state) => {
+      const next = { ...state.typingStatus };
+      delete next[conversationId];
+      return { typingStatus: next };
+    });
+  },
 }));
