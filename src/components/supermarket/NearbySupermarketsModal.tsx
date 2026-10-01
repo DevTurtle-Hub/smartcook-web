@@ -186,6 +186,91 @@ const POPULAR_SUPERMARKETS: SupermarketLocation[] = [
     hasParking: true,
     highlightTag: 'Giá tốt nhất cho số lượng lớn'
   },
+  // Quy Nhơn (Bình Định)
+  {
+    id: 'sm-qn-1',
+    name: 'Co.opmart Quy Nhơn',
+    brand: 'coopmart',
+    lat: 13.7744,
+    lng: 109.2192,
+    address: '07 Lê Duẩn, P. Lý Thường Kiệt, TP. Quy Nhơn, Bình Định',
+    openHours: '07:30 - 22:00',
+    phone: '0256 3522 888',
+    rating: 4.7,
+    reviewsCount: 650,
+    hasParking: true,
+    highlightTag: 'Siêu thị trung tâm, đa dạng thực phẩm tươi sống'
+  },
+  {
+    id: 'sm-qn-2',
+    name: 'GO! Quy Nhơn (Big C Kim Cúc Plaza)',
+    brand: 'bigc',
+    lat: 13.7583,
+    lng: 109.2155,
+    address: 'Khu Đô Thị Xanh Vũng Chua, P. Ghềnh Ráng, TP. Quy Nhơn, Bình Định',
+    openHours: '08:00 - 22:00',
+    phone: '0256 3686 688',
+    rating: 4.8,
+    reviewsCount: 1120,
+    hasParking: true,
+    highlightTag: 'Đại siêu thị lớn nhất Quy Nhơn, giá tốt'
+  },
+  {
+    id: 'sm-qn-3',
+    name: 'WinMart+ Nguyễn Thái Học Quy Nhơn',
+    brand: 'winmart',
+    lat: 13.7661,
+    lng: 109.2235,
+    address: '354 Nguyễn Thái Học, P. Ngô Mây, TP. Quy Nhơn, Bình Định',
+    openHours: '06:00 - 22:00',
+    phone: '0256 7108 888',
+    rating: 4.6,
+    reviewsCount: 135,
+    hasParking: true,
+    highlightTag: 'Cửa hàng tiện lợi, rau củ thịt sạch VietGAP'
+  },
+  {
+    id: 'sm-qn-4',
+    name: 'WinMart+ An Dương Vương Quy Nhơn',
+    brand: 'winmart',
+    lat: 13.7548,
+    lng: 109.2177,
+    address: '01 An Dương Vương, P. Nguyễn Văn Cừ, TP. Quy Nhơn, Bình Định',
+    openHours: '06:00 - 22:00',
+    phone: '0256 7109 999',
+    rating: 4.5,
+    reviewsCount: 98,
+    hasParking: true,
+    highlightTag: 'Gần bờ biển và các trường đại học'
+  },
+  {
+    id: 'sm-qn-5',
+    name: 'Bách Hóa Xanh Trần Hưng Đạo Quy Nhơn',
+    brand: 'bachhoaxanh',
+    lat: 13.7788,
+    lng: 109.2312,
+    address: '650 Trần Hưng Đạo, P. Đống Đa, TP. Quy Nhơn, Bình Định',
+    openHours: '06:30 - 21:30',
+    phone: '1900 1908',
+    rating: 4.5,
+    reviewsCount: 210,
+    hasParking: true,
+    highlightTag: 'Hải sản và rau củ quả tươi ngon mỗi ngày'
+  },
+  {
+    id: 'sm-qn-6',
+    name: 'Mega Market Quy Nhơn',
+    brand: 'other',
+    lat: 13.7482,
+    lng: 109.2045,
+    address: 'Quốc Lộ 1D, P. Ghềnh Ráng, TP. Quy Nhơn, Bình Định',
+    openHours: '06:00 - 21:30',
+    phone: '0256 3546 888',
+    rating: 4.7,
+    reviewsCount: 540,
+    hasParking: true,
+    highlightTag: 'Bán buôn và bán lẻ nguyên liệu thực phẩm lớn'
+  },
   // Đà Nẵng
   {
     id: 'sm-dn-1',
@@ -214,6 +299,78 @@ const POPULAR_SUPERMARKETS: SupermarketLocation[] = [
     reviewsCount: 430,
     hasParking: true,
     highlightTag: 'Hàng Việt Nam chất lượng cao'
+  },
+  {
+    id: 'sm-dn-3',
+    name: 'Lotte Mart Đà Nẵng',
+    brand: 'lotte',
+    lat: 16.0354,
+    lng: 108.2255,
+    address: '06 Nại Nam, Hoà Cường Bắc, Hải Châu, Đà Nẵng',
+    openHours: '08:00 - 22:00',
+    phone: '0236 3611 999',
+    rating: 4.7,
+    reviewsCount: 920,
+    hasParking: true,
+    highlightTag: 'Trung tâm mua sắm hiện đại'
+  },
+  // Nha Trang (Khánh Hòa)
+  {
+    id: 'sm-nt-1',
+    name: 'GO! Nha Trang (Big C)',
+    brand: 'bigc',
+    lat: 12.2471,
+    lng: 109.1764,
+    address: 'Lô 4, Đường 19/5, Vĩnh Điềm Trung, TP. Nha Trang, Khánh Hòa',
+    openHours: '08:00 - 22:00',
+    phone: '0258 3894 888',
+    rating: 4.6,
+    reviewsCount: 780,
+    hasParking: true,
+    highlightTag: 'Siêu thị quy mô lớn nhất Nha Trang'
+  },
+  {
+    id: 'sm-nt-2',
+    name: 'Co.opmart Nha Trang',
+    brand: 'coopmart',
+    lat: 12.2536,
+    lng: 109.1842,
+    address: '02 Lê Hồng Phong, P. Phước Tân, TP. Nha Trang, Khánh Hòa',
+    openHours: '07:30 - 22:00',
+    phone: '0258 3875 111',
+    rating: 4.6,
+    reviewsCount: 510,
+    hasParking: true,
+    highlightTag: 'Đầy đủ hàng thiết yếu mỗi ngày'
+  },
+  // Cần Thơ
+  {
+    id: 'sm-ct-1',
+    name: 'Lotte Mart Cần Thơ',
+    brand: 'lotte',
+    lat: 10.0452,
+    lng: 105.7725,
+    address: '84 Mậu Thân, An Hòa, Ninh Kiều, Cần Thơ',
+    openHours: '08:00 - 22:00',
+    phone: '0292 3696 888',
+    rating: 4.7,
+    reviewsCount: 890,
+    hasParking: true,
+    highlightTag: 'Siêu thị hiện đại miền Tây'
+  },
+  {
+    id: 'sm-ct-2',
+    name: 'GO! Cần Thơ (Big C)',
+    brand: 'bigc',
+    lat: 10.0173,
+    lng: 105.7891,
+    address: 'Khu Dân Cư Hưng Phú 1, Cái Răng, Cần Thơ',
+    openHours: '08:00 - 22:00',
+    phone: '0292 3737 888',
+    rating: 4.6,
+    reviewsCount: 740,
+    hasParking: true,
+    highlightTag: 'Đa dạng rau quả tươi miền Tây'
   }
 ];
 
@@ -245,6 +402,7 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [locationStatus, setLocationStatus] = useState<string>('Vị trí mặc định (Trung tâm TP.HCM)');
   const [selectedSupermarket, setSelectedSupermarket] = useState<SupermarketLocation | null>(null);
+  const [mapViewMode, setMapViewMode] = useState<'store' | 'user'>('store');
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [liveStores, setLiveStores] = useState<SupermarketLocation[]>([]);
   const [isLoadingStores, setIsLoadingStores] = useState<boolean>(false);
@@ -274,7 +432,7 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
     setTimeout(() => setIsCopiedList(false), 2000);
   };
 
-  // Hàm lấy vị trí thật qua Geolocation Browser
+  // Hàm lấy vị trí thật qua Geolocation Browser + Reverse Geocoding
   const requestCurrentLocation = () => {
     if (!navigator.geolocation) {
       setLocationStatus('Trình duyệt không hỗ trợ định vị.');
@@ -282,14 +440,33 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
     }
 
     setIsLocating(true);
-    setLocationStatus('Đang lấy vị trí hiện tại của bạn...');
+    setLocationStatus('Đang xác định tọa độ GPS của bạn...');
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         setUserCoords({ lat: latitude, lng: longitude });
         setIsLocating(false);
-        setLocationStatus('Đã định vị theo vị trí thực tế của bạn');
+
+        // Reverse Geocoding hiển thị tên Phường/Quận/Thành phố thực tế
+        try {
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const locationParts = [
+              data.locality || data.city,
+              data.principalSubdivision
+            ].filter(Boolean);
+            const addressText = locationParts.length > 0 ? locationParts.join(', ') : 'Vị trí hiện tại';
+            setLocationStatus(`Vị trí của bạn: ${addressText} (GPS chính xác)`);
+          } else {
+            setLocationStatus('Đã định vị theo vị trí thực tế của bạn');
+          }
+        } catch {
+          setLocationStatus('Đã định vị theo vị trí thực tế của bạn');
+        }
       },
       (error) => {
         setIsLocating(false);
@@ -573,10 +750,30 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
               )}
             </div>
 
-            {/* Chuyển nhanh vị trí mẫu (TP.HCM / Hà Nội / Đà Nẵng) */}
-            <div className="p-3 border-t border-slate-200/80 bg-white/70 flex items-center justify-between text-[11px] text-slate-500">
-              <span className="font-semibold text-slate-600">Thử vị trí mẫu:</span>
-              <div className="flex items-center gap-1.5">
+            {/* Chuyển nhanh vị trí mẫu các thành phố lớn */}
+            <div className="p-3 border-t border-slate-200/80 bg-white/70 flex flex-col gap-1.5 text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-600">Thử vị trí các khu vực:</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserCoords({ lat: 13.7744, lng: 109.2192 });
+                    setLocationStatus('TP. Quy Nhơn (Bình Định)');
+                  }}
+                  className="px-2 py-1 rounded-md bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold transition-colors border border-orange-200/60"
+                >
+                  Quy Nhơn
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserCoords({ lat: 16.0544, lng: 108.2022 });
+                    setLocationStatus('Đà Nẵng (Hải Châu)');
+                  }}
+                  className="px-2 py-1 rounded-md bg-slate-100 hover:bg-orange-100 text-slate-700 hover:text-orange-600 font-bold transition-colors"
+                >
+                  Đà Nẵng
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -600,12 +797,22 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
                 <button
                   type="button"
                   onClick={() => {
-                    setUserCoords({ lat: 16.0544, lng: 108.2022 });
-                    setLocationStatus('Đà Nẵng (Hải Châu)');
+                    setUserCoords({ lat: 12.2471, lng: 109.1842 });
+                    setLocationStatus('Nha Trang (Khánh Hòa)');
                   }}
                   className="px-2 py-1 rounded-md bg-slate-100 hover:bg-orange-100 text-slate-700 hover:text-orange-600 font-bold transition-colors"
                 >
-                  Đà Nẵng
+                  Nha Trang
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserCoords({ lat: 10.0452, lng: 105.7725 });
+                    setLocationStatus('Cần Thơ (Ninh Kiều)');
+                  }}
+                  className="px-2 py-1 rounded-md bg-slate-100 hover:bg-orange-100 text-slate-700 hover:text-orange-600 font-bold transition-colors"
+                >
+                  Cần Thơ
                 </button>
               </div>
             </div>
@@ -613,22 +820,78 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
 
           {/* CỘT PHẢI: MAP VIEW & DETAILS CARD (7/12 CỘT) */}
           <div className="lg:col-span-7 flex flex-col min-h-0 bg-slate-900 relative">
+            {/* Cảnh báo khoảng cách nếu xa */}
+            {currentFocus && currentFocus.distanceKm && currentFocus.distanceKm > 15 && (
+              <div className="px-4 py-2 bg-amber-500/90 text-white text-[11px] font-semibold flex items-center justify-between gap-2 z-30 shrink-0">
+                <span className="flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  Siêu thị chuỗi lớn gần nhất cách bạn ~{currentFocus.distanceKm} km. Bạn có thể tìm chợ & tạp hóa gần hơn quanh bạn.
+                </span>
+                <a
+                  href={`https://www.google.com/maps/search/siêu+thị+chợ/@${userCoords.lat},${userCoords.lng},15z`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline whitespace-nowrap hover:text-amber-100 font-bold"
+                >
+                  Tìm chợ quanh đây
+                </a>
+              </div>
+            )}
+
             {/* Bản đồ nhúng Google Maps Embed - Cực kỳ tin cậy, không bị chặn hay vỡ tile */}
             <div className="flex-1 w-full h-full relative min-h-[340px] overflow-hidden bg-slate-100">
-              {currentFocus && (
-                <iframe
-                  key={currentFocus.id}
-                  title={`Bản đồ ${currentFocus.name}`}
-                  src={`https://maps.google.com/maps?q=${currentFocus.lat},${currentFocus.lng}&hl=vi&z=16&output=embed`}
-                  className="w-full h-full border-0 absolute inset-0"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              )}
+              <iframe
+                key={`${mapViewMode}-${currentFocus?.id || 'user'}`}
+                title={mapViewMode === 'user' ? 'Vị trí hiện tại của bạn' : `Bản đồ ${currentFocus?.name}`}
+                src={
+                  mapViewMode === 'user'
+                    ? `https://maps.google.com/maps?q=${userCoords.lat},${userCoords.lng}&hl=vi&z=16&output=embed`
+                    : `https://maps.google.com/maps?q=${currentFocus ? currentFocus.lat : userCoords.lat},${currentFocus ? currentFocus.lng : userCoords.lng}&hl=vi&z=16&output=embed`
+                }
+                className="w-full h-full border-0 absolute inset-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
 
-              {/* Overlay button mở trực tiếp Google Maps app/web */}
-              {currentFocus && (
-                <div className="absolute top-3 right-3 z-20">
+              {/* Chế độ xem bản đồ: Siêu thị / Vị trí của tôi */}
+              <div className="absolute top-3 left-3 z-20 flex items-center gap-1 p-1 bg-white/95 backdrop-blur-md rounded-xl shadow-md border border-slate-200/90 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('store')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                    mapViewMode === 'store'
+                      ? 'bg-orange-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-orange-600'
+                  }`}
+                >
+                  Xem siêu thị
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('user')}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                    mapViewMode === 'user'
+                      ? 'bg-orange-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-orange-600'
+                  }`}
+                >
+                  Vị trí của tôi
+                </button>
+              </div>
+
+              {/* Overlay actions mở Google Maps */}
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
+                <a
+                  href={`https://www.google.com/maps/search/siêu+thị+chợ/@${userCoords.lat},${userCoords.lng},15z`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-white text-slate-800 text-xs font-bold shadow-lg border border-slate-200/90 hover:text-orange-600 transition-all active:scale-95"
+                  title="Tìm tất cả siêu thị, cửa hàng tiện lợi và chợ quanh tọa độ của bạn"
+                >
+                  <Search className="w-3.5 h-3.5 text-orange-600" />
+                  <span>Tìm chợ quanh tôi</span>
+                </a>
+                {currentFocus && (
                   <a
                     href={getGoogleMapsDirUrl(currentFocus)}
                     target="_blank"
@@ -636,11 +899,11 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-white text-slate-800 text-xs font-extrabold shadow-lg border border-slate-200/90 hover:text-orange-600 transition-all active:scale-95"
                   >
                     <Navigation className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
-                    <span>Mở app Google Maps</span>
+                    <span>Mở Google Maps</span>
                     <ExternalLink className="w-3 h-3 text-slate-400" />
                   </a>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Chi tiết siêu thị đang được chọn */}
