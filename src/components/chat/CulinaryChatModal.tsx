@@ -25,7 +25,6 @@ export const CulinaryChatModal: React.FC = () => {
     sendMessage,
     loadConversations,
     isLoading,
-    isSending,
     typingStatus,
     initSocket
   } = useChatStore();
@@ -87,7 +86,7 @@ export const CulinaryChatModal: React.FC = () => {
 
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!messageInput.trim() || !activeConv || isSending) return;
+    if (!messageInput.trim() || !activeConv) return;
 
     const textToSend = messageInput;
     setMessageInput('');
@@ -409,17 +408,11 @@ export const CulinaryChatModal: React.FC = () => {
                     {/* Nút gửi */}
                     <button
                       type="submit"
-                      disabled={!messageInput.trim() || isSending}
+                      disabled={!messageInput.trim()}
                       className="px-5 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 text-white text-xs sm:text-sm font-extrabold transition-all shadow-md shadow-orange-500/25 active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer"
                     >
-                      {isSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <span>Gửi</span>
-                          <Send className="w-4 h-4" />
-                        </>
-                      )}
+                      <span>Gửi</span>
+                      <Send className="w-4 h-4" />
                     </button>
                   </form>
                 </div>

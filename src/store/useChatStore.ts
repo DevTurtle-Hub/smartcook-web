@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { chatApi, ApiConversationItem, ApiMessageItem } from '../api/chat.api';
 import { socketService } from '../services/socket.service';
 import { useAuthStore } from './useAuthStore';
+import { playMessageNotificationSound, showDesktopNotification, requestDesktopNotificationPermission } from '../utils/sound';
 
 export interface ChatMessage {
   id: string;
@@ -33,18 +34,29 @@ export interface ChatConversation {
   isLoaded?: boolean;
 }
 
+export interface ChatToastNotificationItem {
+  id: string;
+  conversationId: string;
+  senderName: string;
+  senderAvatar?: string;
+  senderBadge?: string;
+  text: string;
+  timestamp: string;
+}
+
 interface ChatState {
   isOpen: boolean;
   conversations: ChatConversation[];
   activeConversationId: string | null;
   isLoading: boolean;
-  isSending: boolean;
   typingStatus: Record<string, string>; // conversationId -> userName typing
+  activeToast: ChatToastNotificationItem | null;
 
   // Actions
   openChat: () => void;
   closeChat: () => void;
   toggleChat: () => void;
+  dismissToast: () => void;
   setActiveConversation: (id: string) => Promise<void>;
   loadConversations: () => Promise<void>;
   loadMessages: (conversationId: string) => Promise<void>;
@@ -57,18 +69,18 @@ interface ChatState {
   initSocket: () => void;
 }
 
-let isSocketSubscribed = false;
+let isSocketInitialized = false;
 
 export const useChatStore = create<ChatState>((set, get) => ({
   isOpen: false,
   conversations: [],
   activeConversationId: null,
   isLoading: false,
-  isSending: false,
   typingStatus: {},
+  activeToast: null,
 
   openChat: () => {
-    set({ isOpen: true });
+    set({ isOpen: true, activeToast: null });
     get().initSocket();
     if (get().conversations.length === 0) {
       get().loadConversations();
@@ -88,17 +100,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  dismissToast: () => {
+    set({ activeToast: null });
+  },
+
   initSocket: () => {
     const token = useAuthStore.getState().accessToken;
     if (!token) return;
 
     socketService.connect(token);
+    requestDesktopNotificationPermission().catch(() => {});
 
-    if (isSocketSubscribed) return;
-    isSocketSubscribed = true;
+    if (isSocketInitialized) return;
+    isSocketInitialized = true;
 
     socketService.onNewMessage((msg: any) => {
-      console.log('💬 [useChatStore] Received new_message:', msg);
       get().handleIncomingMessage(msg);
     });
 
@@ -116,7 +132,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setActiveConversation: async (id: string) => {
-    set({ activeConversationId: id, isOpen: true });
+    set({ activeConversationId: id, isOpen: true, activeToast: null });
     socketService.joinRoom(id);
     get().markAsRead(id);
     await get().loadMessages(id);
@@ -226,6 +242,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({
           activeConversationId: existing.id,
           isOpen: true,
+          activeToast: null,
         });
         socketService.joinRoom(existing.id);
         get().markAsRead(existing.id);
@@ -256,6 +273,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         conversations: [newConv, ...state.conversations.filter((c) => c.id !== convId)],
         activeConversationId: convId,
         isOpen: true,
+        activeToast: null,
       }));
 
       socketService.joinRoom(convId);
@@ -289,7 +307,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isMe: true,
     };
 
-    // Optimistically add message
+    // 1. Instant local render (0ms response time)
     set((state) => ({
       conversations: state.conversations.map((conv) => {
         if (conv.id !== conversationId) return conv;
@@ -302,37 +320,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }),
     }));
 
-    try {
-      set({ isSending: true });
+    // 2. Non-blocking asynchronous network delivery
+    (async () => {
+      try {
+        const socketRes = await socketService.sendMessage(conversationId, cleanText, imageUri);
 
-      // Try WebSocket first
-      const socketRes = await socketService.sendMessage(conversationId, cleanText, imageUri);
-
-      if (socketRes?.success && socketRes.data) {
-        const savedMsg = socketRes.data;
-        // Replace optimistic message with actual message from server
-        set((state) => ({
-          conversations: state.conversations.map((conv) => {
-            if (conv.id !== conversationId) return conv;
-            return {
-              ...conv,
-              messages: conv.messages.map((m) =>
-                m.id === tempId
-                  ? {
-                      ...m,
-                      id: savedMsg.id || savedMsg._id || m.id,
-                      createdAt: savedMsg.timestamp || m.createdAt,
-                    }
-                  : m
-              ),
-            };
-          }),
-        }));
-      } else {
-        // Fallback to REST API
-        console.warn('⚠️ [useChatStore] WebSocket send failed, falling back to REST');
-        const restMsg = await chatApi.sendMessageFallback(conversationId, cleanText, imageUri);
-        if (restMsg) {
+        if (socketRes?.success && socketRes.data) {
+          const savedMsg = socketRes.data;
           set((state) => ({
             conversations: state.conversations.map((conv) => {
               if (conv.id !== conversationId) return conv;
@@ -342,21 +336,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   m.id === tempId
                     ? {
                         ...m,
-                        id: restMsg.id || m.id,
-                        createdAt: restMsg.timestamp || m.createdAt,
+                        id: savedMsg.id || savedMsg._id || m.id,
+                        createdAt: savedMsg.timestamp || m.createdAt,
                       }
                     : m
                 ),
               };
             }),
           }));
+        } else {
+          // REST API fallback
+          const restMsg = await chatApi.sendMessageFallback(conversationId, cleanText, imageUri);
+          if (restMsg) {
+            set((state) => ({
+              conversations: state.conversations.map((conv) => {
+                if (conv.id !== conversationId) return conv;
+                return {
+                  ...conv,
+                  messages: conv.messages.map((m) =>
+                    m.id === tempId
+                      ? {
+                          ...m,
+                          id: restMsg.id || m.id,
+                          createdAt: restMsg.timestamp || m.createdAt,
+                        }
+                      : m
+                  ),
+                };
+              }),
+            }));
+          }
         }
+      } catch (error) {
+        console.error('❌ [useChatStore] Delivery error:', error);
       }
-    } catch (error) {
-      console.error('❌ [useChatStore] Failed to send message:', error);
-    } finally {
-      set({ isSending: false });
-    }
+    })();
   },
 
   handleIncomingMessage: (msg: any) => {
@@ -383,33 +397,76 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
 
     const state = get();
-    const exists = state.conversations.some((c) => c.id === convId);
+    const isCurrentActiveAndOpen = state.isOpen && state.activeConversationId === convId;
 
-    if (!exists) {
-      // New conversation created by another user, refresh conversations list
-      get().loadConversations();
-      return;
+    // Trigger rich notifications if incoming from someone else and not actively reading this conversation
+    if (!isMe && !isCurrentActiveAndOpen) {
+      // 1. Play audio chime
+      playMessageNotificationSound();
+
+      // 2. Show floating interactive toast
+      set({
+        activeToast: {
+          id: incoming.id,
+          conversationId: convId,
+          senderName: incoming.senderName,
+          senderAvatar: incoming.senderAvatar,
+          senderBadge: senderObj.badge || 'Đầu bếp',
+          text: incoming.text || '[Hình ảnh món ăn]',
+          timestamp: 'Vừa xong',
+        },
+      });
+
+      // 3. HTML5 Desktop Notification
+      showDesktopNotification(
+        `SmartCook: ${incoming.senderName}`,
+        incoming.text || 'Đã gửi một ảnh món ăn',
+        incoming.senderAvatar,
+        () => {
+          get().setActiveConversation(convId);
+        }
+      );
     }
 
-    const isCurrentActive = state.isOpen && state.activeConversationId === convId;
+    const existingIndex = state.conversations.findIndex((c) => c.id === convId);
 
-    set((s) => ({
-      conversations: s.conversations.map((conv) => {
-        if (conv.id !== convId) return conv;
+    if (existingIndex === -1) {
+      // Add conversation immediately with incoming message so it appears with zero lag
+      const newConv: ChatConversation = {
+        id: convId,
+        partnerId: senderId,
+        partnerName: incoming.senderName,
+        partnerAvatar: incoming.senderAvatar,
+        partnerRole: senderObj.badge || 'Thành Viên Bếp',
+        isOnline: true,
+        lastMessage: incoming.text || '[Hình ảnh]',
+        lastMessageTime: 'Vừa xong',
+        unreadCount: isCurrentActiveAndOpen ? 0 : 1,
+        messages: [incoming],
+        isLoaded: true,
+      };
 
-        // Prevent duplicate if message already present
-        const alreadyHasMsg = conv.messages.some((m) => m.id === incoming.id);
-        const updatedMessages = alreadyHasMsg ? conv.messages : [...conv.messages, incoming];
+      set((s) => ({
+        conversations: [newConv, ...s.conversations],
+      }));
+    } else {
+      set((s) => ({
+        conversations: s.conversations.map((conv) => {
+          if (conv.id !== convId) return conv;
 
-        return {
-          ...conv,
-          lastMessage: incoming.text || '[Hình ảnh]',
-          lastMessageTime: 'Vừa xong',
-          unreadCount: isCurrentActive || isMe ? conv.unreadCount : conv.unreadCount + 1,
-          messages: updatedMessages,
-        };
-      }),
-    }));
+          const alreadyHasMsg = conv.messages.some((m) => m.id === incoming.id);
+          const updatedMessages = alreadyHasMsg ? conv.messages : [...conv.messages, incoming];
+
+          return {
+            ...conv,
+            lastMessage: incoming.text || '[Hình ảnh]',
+            lastMessageTime: 'Vừa xong',
+            unreadCount: isCurrentActiveAndOpen || isMe ? conv.unreadCount : conv.unreadCount + 1,
+            messages: updatedMessages,
+          };
+        }),
+      }));
+    }
   },
 
   markAsRead: (conversationId: string) => {
