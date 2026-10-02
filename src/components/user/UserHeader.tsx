@@ -36,9 +36,16 @@ interface UserHeaderProps {
 export const UserHeader: React.FC<UserHeaderProps> = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuthStore();
   const { items: cartItems, toggleCart, openCart, getTotalPrice } = useCartStore();
-  const { toggleChat, conversations } = useChatStore();
+  const { toggleChat, conversations, initSocket, loadConversations } = useChatStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initSocket();
+      loadConversations();
+    }
+  }, [isAuthenticated, initSocket, loadConversations]);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -262,8 +269,9 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
             <div className="relative">
               <MessageCircle className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
               {totalUnreadChats > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs animate-in zoom-in-50 duration-200">
-                  {totalUnreadChats}
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-md shadow-rose-500/40 ring-2 ring-white">
+                  <span className="absolute -inset-0.5 rounded-full bg-rose-400 animate-ping opacity-50"></span>
+                  <span className="relative z-10">{totalUnreadChats}</span>
                 </span>
               )}
             </div>

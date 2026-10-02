@@ -30,6 +30,7 @@ import type { Post, Recipe, ReactionType } from '../../types';
 import { UserHeader } from '../../components/user/UserHeader';
 import { recipeApi } from '../../api/recipe.api';
 import { communityApi } from '../../api/community.api';
+import { socketService } from '../../services/socket.service';
 
 // Format relative time helper
 const formatRelativeTime = (dateString?: string) => {
@@ -125,6 +126,118 @@ export const CommunityPage: React.FC = () => {
   useEffect(() => {
     fetchPosts(selectedTopicTag);
   }, [selectedTopicTag]);
+
+  // Real-time Live Feed listeners: reactions, comments, new posts, deletions
+  useEffect(() => {
+    socketService.connect();
+
+    // 1. Real-time reaction update
+    const handleLiveReaction = (data: {
+      postId: string;
+      totalReactions: number;
+      reactionCounts: Record<string, number>;
+      userId: string;
+      reactionType: string | null;
+    }) => {
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p._id !== data.postId) return p;
+          const isCurrentUser = user?._id && data.userId === user._id;
+          return {
+            ...p,
+            totalReactions: data.totalReactions,
+            reactionCounts: {
+              like: data.reactionCounts?.like ?? p.reactionCounts?.like ?? 0,
+              love: data.reactionCounts?.love ?? p.reactionCounts?.love ?? 0,
+              haha: data.reactionCounts?.haha ?? p.reactionCounts?.haha ?? 0,
+              wow: data.reactionCounts?.wow ?? p.reactionCounts?.wow ?? 0,
+              sad: data.reactionCounts?.sad ?? p.reactionCounts?.sad ?? 0,
+              angry: data.reactionCounts?.angry ?? p.reactionCounts?.angry ?? 0,
+            },
+            ...(isCurrentUser
+              ? {
+                  myReaction: (data.reactionType as ReactionType) || null,
+                  isLiked: !!data.reactionType,
+                }
+              : {}),
+          };
+        })
+      );
+    };
+
+    // 2. Real-time new comment
+    const handleLiveComment = (data: {
+      postId: string;
+      comment: any;
+      commentsCount: number;
+    }) => {
+      // Update comment count on post in feed
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p._id !== data.postId) return p;
+          return {
+            ...p,
+            commentsCount: data.commentsCount,
+          };
+        })
+      );
+
+      // If comments section is open for this post, append in real-time
+      setPostComments((prev) => {
+        const existing = prev[data.postId];
+        if (!existing) return prev;
+
+        const commentId = data.comment._id || data.comment.id;
+        if (existing.some((c) => c.id === commentId)) return prev;
+
+        const authorName =
+          data.comment.author?.fullName ||
+          `${data.comment.author?.firstName || ''} ${data.comment.author?.lastName || ''}`.trim() ||
+          'Thành viên SmartCook';
+
+        const formatted = {
+          id: commentId,
+          author: authorName,
+          authorId: data.comment.author?._id || data.comment.author?.id,
+          text: data.comment.content,
+          time: 'Vừa xong',
+          avatar: data.comment.author?.avatar,
+        };
+
+        return {
+          ...prev,
+          [data.postId]: [...existing, formatted],
+        };
+      });
+    };
+
+    // 3. Real-time new post
+    const handleLiveNewPost = (data: { post: any }) => {
+      if (!data?.post?._id) return;
+      setPosts((prev) => {
+        if (prev.some((p) => p._id === data.post._id)) return prev;
+        return [data.post, ...prev];
+      });
+    };
+
+    // 4. Real-time post deleted
+    const handleLivePostDeleted = (data: { postId: string }) => {
+      if (!data?.postId) return;
+      setPosts((prev) => prev.filter((p) => p._id !== data.postId));
+    };
+
+    socketService.onPostReaction(handleLiveReaction);
+    socketService.onPostComment(handleLiveComment);
+    socketService.onCommunityPost(handleLiveNewPost);
+    socketService.onPostDeleted(handleLivePostDeleted);
+
+    return () => {
+      socketService.offPostReaction(handleLiveReaction);
+      socketService.offPostComment(handleLiveComment);
+      socketService.offCommunityPost(handleLiveNewPost);
+      socketService.offPostDeleted(handleLivePostDeleted);
+    };
+  }, [user?._id]);
 
   // Load recipes for attaching
   useEffect(() => {
