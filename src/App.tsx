@@ -4,6 +4,7 @@ import { AppRoutes } from './routes/AppRoutes';
 import { FloatingChefAssistant } from './components/ai/FloatingChefAssistant';
 import { ChatToastNotification } from './components/chat/ChatToastNotification';
 import { ToastProvider } from './context/ToastContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,15 +17,17 @@ const queryClient = new QueryClient({
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <FloatingChefAssistant />
-          <ChatToastNotification />
-        </BrowserRouter>
-      </ToastProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <BrowserRouter>
+            <AppRoutes />
+            <FloatingChefAssistant />
+            <ChatToastNotification />
+          </BrowserRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
