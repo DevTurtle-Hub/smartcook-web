@@ -32,6 +32,7 @@ import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback'
 import { useAuthStore } from '../../store/useAuthStore';
 import { cookingHistoryApi } from '../../api/cookingHistory.api';
 import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupermarketsModal';
+import { toast } from '../../context/ToastContext';
 
 // Bản đồ giá tiền ước tính mẫu cho các nguyên liệu phổ biến tại Việt Nam
 const INGREDIENT_PRICE_MAP: Record<string, number> = {
@@ -236,6 +237,11 @@ export const RecipeDetailPage: React.FC = () => {
   const handleToggleFavorite = async () => {
     const nextState = !isFavorite;
     setIsFavorite(nextState);
+    if (nextState) {
+      toast.success('Đã thêm món ăn vào danh sách yêu thích!');
+    } else {
+      toast.info('Đã gỡ món ăn khỏi danh sách yêu thích.');
+    }
     if (recipe._id && !recipe._id.startsWith('seed-')) {
       try {
         await recipeApi.toggleFavorite(recipe._id);
@@ -256,10 +262,14 @@ export const RecipeDetailPage: React.FC = () => {
           level: res.user.level,
         });
       }
+      toast.success('🎉 Chúc mừng! Bạn đã hoàn thành nấu món ăn và nhận được +50 XP thưởng đầu bếp!', {
+        title: 'Nấu Ăn Hoàn Thành'
+      });
       setCompletedNotice('🎉 Chúc mừng! Bạn đã hoàn thành nấu món ăn và nhận được +50 XP thưởng đầu bếp!');
       setTimeout(() => setCompletedNotice(null), 6000);
     } catch (err) {
       console.warn('Could not record cooking session:', err);
+      toast.error('Không thể lưu lịch sử nấu ăn. Vui lòng thử lại sau.');
     } finally {
       setIsSubmittingCooking(false);
     }
@@ -275,6 +285,12 @@ export const RecipeDetailPage: React.FC = () => {
       unit: ing.unit,
       price: ing.price,
       notes: ing.notes,
+    });
+    toast.success(`Đã thêm "${ing.name}" vào giỏ đi chợ!`, {
+      action: {
+        label: 'Xem giỏ hàng',
+        onClick: () => openCart()
+      }
     });
     setAddedNotice(`Đã thêm "${ing.name}" vào giỏ đi chợ!`);
     setTimeout(() => setAddedNotice(null), 3000);
@@ -296,6 +312,12 @@ export const RecipeDetailPage: React.FC = () => {
         notes: ing.notes,
       });
     });
+    toast.success(`Đã thêm ${unChecked.length} nguyên liệu cần mua vào giỏ!`, {
+      action: {
+        label: 'Mở giỏ hàng',
+        onClick: () => openCart()
+      }
+    });
     setAddedNotice(`Đã thêm ${unChecked.length} nguyên liệu cần mua vào giỏ!`);
     setTimeout(() => setAddedNotice(null), 3000);
     openCart();
@@ -303,6 +325,7 @@ export const RecipeDetailPage: React.FC = () => {
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
+    toast.success('Đã sao chép liên kết công thức món ăn vào khay nhớ tạm!');
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };

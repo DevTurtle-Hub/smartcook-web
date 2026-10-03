@@ -31,6 +31,7 @@ import { UserHeader } from '../../components/user/UserHeader';
 import { recipeApi } from '../../api/recipe.api';
 import { communityApi } from '../../api/community.api';
 import { socketService } from '../../services/socket.service';
+import { toast } from '../../context/ToastContext';
 
 // Format relative time helper
 const formatRelativeTime = (dateString?: string) => {
@@ -394,10 +395,10 @@ export const CommunityPage: React.FC = () => {
       setSelectedRecipe(null);
       setSelectedMood(null);
       setSelectedTags(['smartcook', 'yeubep']);
-      alert('🎉 Đăng bài viết cộng đồng thành công! Bạn nhận được +20 XP Đầu Bếp.');
+      toast.success('🎉 Đăng bài viết cộng đồng thành công! Bạn nhận được +20 XP Đầu Bếp.');
     } catch (err: any) {
       console.error('Lỗi khi đăng bài:', err);
-      alert(err.response?.data?.message || 'Đăng bài viết thất bại. Vui lòng thử lại!');
+      toast.error(err.response?.data?.message || 'Đăng bài viết thất bại. Vui lòng thử lại!');
     } finally {
       setIsPublishing(false);
     }
@@ -465,9 +466,10 @@ export const CommunityPage: React.FC = () => {
       );
 
       setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+      toast.success('Đã gửi thảo luận thành công!');
     } catch (err: any) {
       console.error('Lỗi khi gửi bình luận:', err);
-      alert('Không thể gửi bình luận. Vui lòng thử lại!');
+      toast.error('Không thể gửi bình luận. Vui lòng thử lại!');
     }
   };
 
@@ -477,10 +479,10 @@ export const CommunityPage: React.FC = () => {
     try {
       await communityApi.deletePost(postId);
       setPosts((prev) => prev.filter((p) => p._id !== postId));
-      alert('Đã xoá bài viết thành công!');
+      toast.info('Đã xoá bài viết thành công.');
     } catch (err: any) {
       console.error('Lỗi khi xoá bài viết:', err);
-      alert(err.response?.data?.message || 'Không thể xoá bài viết!');
+      toast.error(err.response?.data?.message || 'Không thể xoá bài viết!');
     }
   };
 
@@ -1260,7 +1262,7 @@ export const CommunityPage: React.FC = () => {
                       <button
                         onClick={() => {
                           navigator.clipboard?.writeText(window.location.href);
-                          alert("Đã sao chép liên kết bài viết!");
+                          toast.success('Đã sao chép liên kết bài viết vào khay nhớ tạm!');
                         }}
                         className="p-2 rounded-2xl bg-white text-slate-500 hover:text-orange-600 border border-slate-200/70 hover:border-orange-200 shadow-xs transition-colors"
                         title="Chia sẻ bài viết"

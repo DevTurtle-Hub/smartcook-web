@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { storeApi, type StoreItem } from '../../api/store.api';
+import { toast } from '../../context/ToastContext';
 
 const POPULAR_BRANDS = [
   'Tất cả',
@@ -35,7 +36,6 @@ export const SupermarketManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('Tất cả');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modal Thêm / Chỉnh Sửa
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -52,11 +52,6 @@ export const SupermarketManagementPage: React.FC = () => {
     logo: '',
   });
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
   // Tải danh sách siêu thị
   const fetchStores = async () => {
     setIsLoading(true);
@@ -65,7 +60,7 @@ export const SupermarketManagementPage: React.FC = () => {
       setStores(data);
     } catch (err: any) {
       console.warn('Lỗi lấy danh sách siêu thị:', err);
-      showToast('Không thể tải danh sách siêu thị từ hệ thống.');
+      toast.error('Không thể tải danh sách siêu thị từ hệ thống.');
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +106,7 @@ export const SupermarketManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.address.trim()) {
-      alert('Vui lòng điền đầy đủ tên và địa chỉ siêu thị.');
+      toast.warning('Vui lòng điền đầy đủ tên và địa chỉ siêu thị.');
       return;
     }
 
@@ -122,20 +117,20 @@ export const SupermarketManagementPage: React.FC = () => {
         const updated = await storeApi.updateStore(editingStore.id, formData);
         if (updated) {
           setStores((prev) => prev.map((s) => (s.id === editingStore.id ? updated : s)));
-          showToast(`Đã cập nhật siêu thị "${formData.name}" thành công.`);
+          toast.success(`Đã cập nhật siêu thị "${formData.name}" thành công.`);
         }
       } else {
         // Thêm mới
         const created = await storeApi.createStore(formData);
         if (created) {
           setStores((prev) => [created, ...prev]);
-          showToast(`Đã thêm mới siêu thị "${formData.name}".`);
+          toast.success(`Đã thêm mới siêu thị "${formData.name}".`);
         }
       }
       setShowModal(false);
     } catch (err: any) {
       console.error('Lỗi lưu siêu thị:', err);
-      alert('Không thể lưu siêu thị. Vui lòng kiểm tra lại kết nối!');
+      toast.error('Không thể lưu siêu thị. Vui lòng kiểm tra lại kết nối!');
     } finally {
       setIsSubmitting(false);
     }
@@ -147,10 +142,10 @@ export const SupermarketManagementPage: React.FC = () => {
     try {
       await storeApi.deleteStore(store.id);
       setStores((prev) => prev.filter((s) => s.id !== store.id));
-      showToast(`Đã xóa điểm bán "${store.name}".`);
+      toast.info(`Đã xóa điểm bán "${store.name}".`);
     } catch (err) {
       console.error('Lỗi xóa siêu thị:', err);
-      alert('Không thể xóa siêu thị lúc này.');
+      toast.error('Không thể xóa siêu thị lúc này.');
     }
   };
 
@@ -175,13 +170,6 @@ export const SupermarketManagementPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Toast thông báo */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2 animate-in slide-in-from-top duration-200">
-          <CheckCircle className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* HEADER QUẢN TRỊ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">

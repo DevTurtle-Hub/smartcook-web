@@ -24,6 +24,7 @@ import { UserHeader } from '../../components/user/UserHeader';
 import { aiApi, type ScanIngredientResult, type ScanDetectedIngredient, type ScanPin } from '../../api/ai.api';
 import { fridgeApi } from '../../api/fridge.api';
 import { useAuthStore } from '../../store/useAuthStore';
+import { toast } from '../../context/ToastContext';
 
 export const AIScanPage: React.FC = () => {
   const navigate = useNavigate();
@@ -69,12 +70,16 @@ export const AIScanPage: React.FC = () => {
   // Xử lý khi người dùng chọn file ảnh
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setErrorMessage('Vui lòng chỉ chọn tệp hình ảnh (PNG, JPG, JPEG, WEBP)');
+      const msg = 'Vui lòng chỉ chọn tệp hình ảnh (PNG, JPG, JPEG, WEBP)';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setErrorMessage('Kích thước ảnh vượt quá 10MB. Vui lòng chọn ảnh nhẹ hơn.');
+      const msg = 'Kích thước ảnh vượt quá 10MB. Vui lòng chọn ảnh nhẹ hơn.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
@@ -141,10 +146,17 @@ export const AIScanPage: React.FC = () => {
       });
 
       setAddedItemNames((prev) => new Set(prev).add(ingredient.name));
+      toast.success(`Đã thêm "${ingredient.name}" vào Tủ Lạnh!`, {
+        action: {
+          label: 'Xem Tủ Lạnh',
+          onClick: () => navigate('/kitchen')
+        }
+      });
       setFridgeNotification(`Đã thêm "${ingredient.name}" vào Tủ lạnh!`);
       setTimeout(() => setFridgeNotification(null), 3000);
     } catch (err) {
       console.error('Lỗi khi thêm vào tủ lạnh:', err);
+      toast.error('Có lỗi khi thêm nguyên liệu vào tủ lạnh.');
     }
   };
 
@@ -176,10 +188,17 @@ export const AIScanPage: React.FC = () => {
 
       const allNames = new Set(scanResult.ingredients.map((i) => i.name));
       setAddedItemNames(allNames);
+      toast.success(`🎉 Đã thêm thành công ${addedCount} nguyên liệu vào Tủ Lạnh!`, {
+        action: {
+          label: 'Xem Tủ Lạnh',
+          onClick: () => navigate('/kitchen')
+        }
+      });
       setFridgeNotification(`🎉 Đã thêm thành công ${addedCount} nguyên liệu vào Tủ lạnh ("Bếp Của Tôi")!`);
       setTimeout(() => setFridgeNotification(null), 4000);
     } catch (err) {
       console.error('Lỗi khi thêm tất cả vào tủ lạnh:', err);
+      toast.error('Có lỗi khi lưu nguyên liệu vào tủ lạnh. Vui lòng thử lại.');
       setFridgeNotification('Có lỗi khi lưu nguyên liệu vào tủ lạnh. Vui lòng thử lại.');
     } finally {
       setAddingToFridge(false);
@@ -195,6 +214,7 @@ export const AIScanPage: React.FC = () => {
     setErrorMessage(null);
     setAddedItemNames(new Set());
     setFridgeNotification(null);
+    toast.info('Đã làm mới khu vực quét AI.');
   };
 
   // Xem lại một kết quả từ lịch sử
@@ -212,8 +232,10 @@ export const AIScanPage: React.FC = () => {
     try {
       await aiApi.deleteScanHistory(id);
       setScanHistory((prev) => prev.filter((it) => it.id !== id && it._id !== id));
+      toast.info('Đã xóa lượt quét khỏi lịch sử.');
     } catch (err) {
       console.error('Lỗi khi xóa lịch sử quét:', err);
+      toast.error('Không thể xóa lịch sử quét.');
     }
   };
 
