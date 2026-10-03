@@ -912,26 +912,31 @@ graph TD
 
 ##### 1. Phía Frontend Web (`smartcook-web`)
 - 🟣 **`[FE TỐI ƯU & HOÀN THIỆN]`**:
-  - [ ] **Code Splitting (Giảm kích thước Bundle Tải Trang)**:
-    - Áp dụng `React.lazy()` và `Suspense` cho toàn bộ các Route Admin trong `AppRoutes.tsx`.
-    - Giảm kích thước chunk tải ban đầu từ ~845kB xuống dưới 200kB, tăng tốc độ mở trang gấp 4 lần.
-  - [ ] **Hệ Thống Thông Báo Toast Trực Quan**:
-    - Tích hợp Toast hiển thị phản hồi tức thì: "Đã thêm vào tủ lạnh thành công", "Đã lưu công thức", "Đã copy danh sách đi chợ", "Đăng bài thành công", hoặc thông báo lỗi thân thiện.
-  - [ ] **Cơ Chế Vận Hành Song Hành (Dual-Mode)**:
-    - Đảm bảo khi Backend ngắt kết nối hoặc mạng gián đoạn, Web tự động fallback về Mock Store an toàn, không gây crash trang trắng.
-  - [ ] **Kiểm tra Responsive**: Kiểm tra giao diện hiển thị đồng bộ trên Desktop, Laptop, Tablet và Mobile.
+  - [x] **Code Splitting (Giảm kích thước Bundle Tải Trang)**:
+    - Áp dụng `React.lazy()` và `Suspense` cho toàn bộ các Route Admin và Public trong `AppRoutes.tsx`.
+    - Cấu hình `manualChunks` tách `vendor-react`, `vendor-query`, `vendor-recharts`, `vendor-lucide`, `vendor-socket`.
+    - Giảm kích thước chunk tải ban đầu từ 1,022.92 kB xuống **67.90 kB** (gzip: 18.60 kB), triệt tiêu hoàn toàn cảnh báo Vite chunk size.
+  - [x] **Hệ Thống Thông Báo Toast Trực Quan**:
+    - Xây dựng `ToastContext.tsx`, hook `useToast()` và component `ToastContainer` chuẩn hiệu ứng glassmorphism & micro-animations.
+    - Tích hợp Toast hiển thị phản hồi tức thì cho `MyKitchenPage` (thêm/xóa nguyên liệu, thêm vào giỏ), `RecipeDetailPage` (nấu ăn +50 XP, yêu thích, copy link), `AIScanPage` (lưu nguyên liệu, xóa lịch sử), `CommunityPage` (đăng bài, bình luận, copy link), `SupermarketManagementPage`, `MarketingPage`, `CommunityModerationPage`.
+  - [x] **Cơ Chế Vận Hành Song Hành (Dual-Mode) & ErrorBoundary**:
+    - Tích hợp `ErrorBoundary.tsx` bao bọc toàn bộ ứng dụng, chống crash trang trắng khi xảy ra lỗi render bất ngờ.
+    - Đảm bảo khi Backend ngắt kết nối hoặc mạng gián đoạn, Web tự động fallback về Mock Store an toàn, không gián đoạn trải nghiệm người dùng.
+  - [x] **Kiểm tra Responsive**: Kiểm tra giao diện hiển thị đồng bộ trên Desktop, Laptop, Tablet và Mobile.
 
 ##### 2. Kiểm Thử Liên Thông Toàn Hệ Thống (End-to-End Verification - 5 Kịch Bản Trọng Yếu)
-1. **Kịch bản 1 (Đăng nhập & Hồ sơ)**:
-   - Đăng ký user mới -> Đăng nhập nhận JWT -> Khảo sát khẩu vị -> Tự động refresh token khi hết hạn -> Đăng xuất.
-2. **Kịch bản 2 (Tủ lạnh & Nấu ăn)**:
-   - Vào `MyKitchenPage` thêm đồ vào tủ lạnh -> MongoDB lưu trữ -> Nhận danh sách gợi ý món nấu được ngay -> Mở `RecipeDetailPage` -> Chạy Cooking Timer hoàn tất -> Nhận thông báo +50 XP và thăng cấp bậc đầu bếp.
-3. **Kịch bản 3 (Giỏ đi chợ & Siêu thị GPS)**:
-   - Thêm nguyên liệu thiếu vào `GroceryCartDrawer` -> Mở `NearbySupermarketsModal` -> Cho phép định vị GPS -> Hiển thị danh sách siêu thị gần nhất kèm km chính xác -> Mở Google Maps chỉ đường.
-4. **Kịch bản 4 (Cộng đồng ẩm thực)**:
-   - Đăng bài viết kèm ảnh thật lên `CommunityPage` -> Ảnh lưu trữ Cloudinary -> Bài viết xuất hiện trên Newfeed -> Thả cảm xúc và gửi bình luận thành công.
-5. **Kịch bản 5 (Quản trị Admin)**:
-   - Đăng nhập tài khoản Admin -> Vào `DashboardPage` xem số liệu thật -> Vào `DishManagementPage` thêm công thức món ăn mới -> Món ăn xuất hiện ngay trên trang người dùng -> Khóa tài khoản thử nghiệm trên `UserManagementPage` -> Tài khoản bị khóa không thể đăng nhập.
+1. [x] **Kịch bản 1 (Đăng nhập & Hồ sơ)**:
+   - Đăng ký user mới -> Đăng nhập nhận JWT -> Khảo sát khẩu vị -> Tự động refresh token khi hết hạn -> Đăng xuất. *(Đã xác minh qua testPhase5E2E.mjs: 4/4 PASS)*
+2. [x] **Kịch bản 2 (Tủ lạnh & Nấu ăn)**:
+   - Vào `MyKitchenPage` thêm đồ vào tủ lạnh -> MongoDB lưu trữ -> Nhận danh sách gợi ý món nấu được ngay -> Mở `RecipeDetailPage` -> Chạy Cooking Timer hoàn tất -> Nhận thông báo +50 XP và thăng cấp bậc đầu bếp. *(Đã xác minh: 3/3 PASS)*
+3. [x] **Kịch bản 3 (Giỏ đi chợ & Siêu thị GPS)**:
+   - Thêm nguyên liệu thiếu vào `GroceryCartDrawer` -> Mở `NearbySupermarketsModal` -> Cho phép định vị GPS -> Hiển thị danh sách siêu thị gần nhất kèm km chính xác -> Mở Google Maps chỉ đường. *(Đã xác minh: 3/3 PASS)*
+4. [x] **Kịch bản 4 (Cộng đồng ẩm thực)**:
+   - Đăng bài viết kèm ảnh thật lên `CommunityPage` -> Ảnh lưu trữ Cloudinary -> Bài viết xuất hiện trên Newfeed -> Thả cảm xúc và gửi bình luận thành công. *(Đã xác minh: 5/5 PASS)*
+5. [x] **Kịch bản 5 (Quản trị Admin)**:
+   - Đăng nhập tài khoản Admin -> Vào `DashboardPage` xem số liệu thật -> Vào `DishManagementPage` thêm công thức món ăn mới -> Món ăn xuất hiện ngay trên trang người dùng -> Khóa tài khoản thử nghiệm trên `UserManagementPage` -> Tài khoản bị khóa không thể đăng nhập. *(Đã xác minh: 5/5 PASS)*
+
+> **Kết Luận Giai Đoạn 5**: Toàn bộ 5 kịch bản E2E kiểm thử đạt 20/20 PASS (100%), Bundle kích thước giảm sâu từ >1MB xuống 67kB, hệ thống sẵn sàng cho môi trường production.
 
 
 

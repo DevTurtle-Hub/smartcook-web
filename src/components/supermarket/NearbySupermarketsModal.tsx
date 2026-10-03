@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { storeApi } from '../../api/store.api';
 import { useCartStore } from '../../store/useCartStore';
+import { toast } from '../../context/ToastContext';
 
 interface NearbySupermarketsModalProps {
   isOpen: boolean;
@@ -429,6 +430,7 @@ export const NearbySupermarketsModal: React.FC<NearbySupermarketsModalProps> = (
       .join('\n');
     navigator.clipboard?.writeText(text);
     setIsCopiedList(true);
+    toast.success(`Đã sao chép ${displayIngredients.length} món cần mua vào khay nhớ tạm!`);
     setTimeout(() => setIsCopiedList(false), 2000);
   };
 

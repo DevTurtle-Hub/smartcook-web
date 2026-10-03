@@ -32,6 +32,7 @@ import {
 import { useAdminStore } from '../../store/useAdminStore';
 import type { CommunityPostAdmin, ModerationReport } from '../../types/admin';
 import { communityApi } from '../../api/community.api';
+import { toast } from '../../context/ToastContext';
 
 export const CommunityModerationPage: React.FC = () => {
   const {
@@ -97,10 +98,8 @@ export const CommunityModerationPage: React.FC = () => {
   });
 
   // Thông báo toast phản hồi thao tác
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    toast.success(msg, { title: 'Kiểm Duyệt' });
   };
 
   // Quản lý hashtag
@@ -283,14 +282,6 @@ export const CommunityModerationPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Toast phản hồi nhanh */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-70 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2 animate-in slide-in-from-top duration-200">
-          <CheckCircle className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {/* ================= THANH ĐIỀU HƯỚNG TAB CHÍNH ================= */}
       <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto">

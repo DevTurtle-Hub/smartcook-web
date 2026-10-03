@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import type { PushNotificationSchedule } from '../../types/admin';
+import { toast } from '../../context/ToastContext';
 
 export const MarketingPage: React.FC = () => {
   const { notifications, addNotification } = useAdminStore();
@@ -52,7 +53,6 @@ export const MarketingPage: React.FC = () => {
   const [scheduledTime, setScheduledTime] = useState('11:00 Hôm nay');
   const [targetOS, setTargetOS] = useState<'all' | 'ios' | 'android'>('all');
   const [actionRoute, setActionRoute] = useState('/recipe/dish-1');
-  const [isSuccessToast, setIsSuccessToast] = useState(false);
 
   // Modal Chỉnh sửa cấu hình gói VIP
   const [editingTier, setEditingTier] = useState<any | null>(null);
@@ -157,8 +157,9 @@ export const MarketingPage: React.FC = () => {
       clicksCount: 12,
     });
 
-    setIsSuccessToast(true);
-    setTimeout(() => setIsSuccessToast(false), 4000);
+    toast.success('Đã phát lệnh Push Notification thành công tới toàn bộ thiết bị ứng dụng SmartCook!', {
+      title: 'Marketing Hub'
+    });
   };
 
   // Mẫu thông báo mẫu tạo nhanh
@@ -234,19 +235,6 @@ export const MarketingPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Thông báo đẩy thành công Toast */}
-      {isSuccessToast && (
-        <div className="p-3.5 bg-emerald-500 text-white rounded-xl shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-top-3 duration-300">
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <CheckCircle className="w-4 h-4" />
-            <span>Đã phát lệnh Push Notification thành công tới toàn bộ thiết bị ứng dụng SmartCook!</span>
-          </div>
-          <button onClick={() => setIsSuccessToast(false)} className="text-white/80 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* =========================================================================
           TAB 1: PHÒNG ĐIỀU KHIỂN CHIẾN DỊCH PUSH & LIVE SIMULATOR (ĐỘC ĐÁO & HIỆN ĐẠI)

@@ -27,6 +27,7 @@ import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupe
 import { useCartStore } from '../../store/useCartStore';
 import { fridgeApi, type FridgeItemDTO } from '../../api/fridge.api';
 import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
+import { toast } from '../../context/ToastContext';
 
 // Danh sách các danh mục nguyên liệu thông dụng trong căn bếp Việt
 const INGREDIENT_CATEGORIES = [
@@ -108,6 +109,7 @@ export const MyKitchenPage: React.FC = () => {
     if (!selectedIngredients.some((ing) => normalize(ing) === normalize(trimmed))) {
       setSelectedIngredients((prev) => [...prev, trimmed]);
       setCustomInput('');
+      toast.success(`Đã thêm "${trimmed}" vào tủ lạnh!`);
       try {
         const updatedList = await fridgeApi.addItem({ name: trimmed, storageLocation: 'chilled' });
         setFridgeItems(updatedList);
@@ -116,6 +118,7 @@ export const MyKitchenPage: React.FC = () => {
       }
     } else {
       setCustomInput('');
+      toast.info(`"${trimmed}" đã có trong danh sách nguyên liệu.`);
     }
   };
 
@@ -123,6 +126,7 @@ export const MyKitchenPage: React.FC = () => {
   const toggleIngredient = async (name: string) => {
     if (selectedIngredients.some((ing) => normalize(ing) === normalize(name))) {
       setSelectedIngredients((prev) => prev.filter((ing) => normalize(ing) !== normalize(name)));
+      toast.info(`Đã gỡ "${name}" khỏi tủ lạnh.`);
       const found = fridgeItems.find((it) => normalize(it.name) === normalize(name));
       const itemId = found?._id || found?.id;
       if (itemId) {
@@ -135,6 +139,7 @@ export const MyKitchenPage: React.FC = () => {
       }
     } else {
       setSelectedIngredients((prev) => [...prev, name]);
+      toast.success(`Đã thêm "${name}" vào tủ lạnh!`);
       try {
         const updatedList = await fridgeApi.addItem({ name, storageLocation: 'chilled' });
         setFridgeItems(updatedList);
@@ -146,8 +151,10 @@ export const MyKitchenPage: React.FC = () => {
 
   // Xóa toàn bộ
   const handleClearAll = async () => {
+    if (selectedIngredients.length === 0) return;
     setSelectedIngredients([]);
     setFridgeItems([]);
+    toast.warning('Đã làm trống danh sách nguyên liệu trong tủ lạnh.');
     try {
       await fridgeApi.clearFridge();
     } catch (err) {
@@ -235,6 +242,13 @@ export const MyKitchenPage: React.FC = () => {
         unit: 'phần',
         price: 15000
       });
+    });
+    toast.success(`Đã thêm ${missing.length} món thiếu vào Giỏ Đi Chợ!`, {
+      title: 'Giỏ Hàng',
+      action: {
+        label: 'Xem giỏ hàng',
+        onClick: () => openCart()
+      }
     });
     openCart();
   };
