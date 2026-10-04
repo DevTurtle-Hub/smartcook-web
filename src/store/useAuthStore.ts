@@ -9,6 +9,7 @@ interface AuthState {
   isAdmin: boolean;
   setAuth: (user: User, accessToken: string, refreshToken?: string) => void;
   setAccessToken: (accessToken: string) => void;
+  setTokens: (accessToken: string, refreshToken?: string) => void;
   updateUser: (user: Partial<User>) => void;
   logout: () => void;
 }
@@ -64,6 +65,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAccessToken: (accessToken) => {
     localStorage.setItem('smartcook_token', accessToken);
     set({ accessToken });
+  },
+
+  setTokens: (accessToken, refreshToken) => {
+    localStorage.setItem('smartcook_token', accessToken);
+    if (refreshToken) {
+      localStorage.setItem('smartcook_refresh_token', refreshToken);
+    }
+    set((state) => ({
+      accessToken,
+      refreshToken: refreshToken || state.refreshToken,
+    }));
   },
 
   updateUser: (updatedFields) => {

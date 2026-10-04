@@ -28,10 +28,13 @@ import {
   ExternalLink,
   Shield,
   Info,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import type { CommunityPostAdmin, ModerationReport } from '../../types/admin';
 import { communityApi } from '../../api/community.api';
+import { adminApi, type ModerationReportApiItem } from '../../api/admin.api';
 import { toast } from '../../context/ToastContext';
 
 export const CommunityModerationPage: React.FC = () => {
@@ -46,6 +49,10 @@ export const CommunityModerationPage: React.FC = () => {
     toggleUserStatus,
     addNotification,
   } = useAdminStore();
+
+  const [realReports, setRealReports] = useState<ModerationReportApiItem[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'posts' | 'reports' | 'hashtags'>('posts');
 
@@ -114,8 +121,24 @@ export const CommunityModerationPage: React.FC = () => {
   const [newTagInput, setNewTagInput] = useState('');
   const [newTagCategory, setNewTagCategory] = useState('Món Ngon');
 
-  // Load real posts from backend
+  // Tải danh sách báo cáo vi phạm thật từ backend
+  const loadReports = async () => {
+    setIsLoadingReports(true);
+    try {
+      const data = await adminApi.getReports({ limit: 50 });
+      if (data && data.reports) {
+        setRealReports(data.reports);
+      }
+    } catch (err) {
+      console.warn('Lỗi lấy danh sách báo cáo vi phạm:', err);
+    } finally {
+      setIsLoadingReports(false);
+    }
+  };
+
+  // Load real posts and reports from backend
   useEffect(() => {
+    loadReports();
     communityApi.getPosts({ limit: 50 })
       .then((data) => {
         if (data && data.posts && data.posts.length > 0) {
@@ -143,6 +166,11 @@ export const CommunityModerationPage: React.FC = () => {
       .catch((err) => console.warn('Lỗi lấy bài viết quản trị từ backend:', err));
   }, []);
 
+  const displayReports = useMemo(() => {
+    if (realReports.length > 0) return realReports;
+    return reports as any[];
+  }, [realReports, reports]);
+
   // Thống kê phân loại bài viết
   const counts = useMemo(() => {
     return {
@@ -152,9 +180,9 @@ export const CommunityModerationPage: React.FC = () => {
       spam: communityPosts.filter((p) => p.status === 'spam').length,
       pinned: communityPosts.filter((p) => p.status === 'pinned').length,
       hidden: communityPosts.filter((p) => p.status === 'hidden').length,
-      pendingReports: reports.filter((r) => r.status === 'pending').length,
+      pendingReports: displayReports.filter((r) => r.status === 'pending').length,
     };
-  }, [communityPosts, reports]);
+  }, [communityPosts, displayReports]);
 
   // Lọc và sắp xếp bài đăng
   const filteredPosts = useMemo(() => {
@@ -269,6 +297,54 @@ export const CommunityModerationPage: React.FC = () => {
 
     setNotifyModal({ ...notifyModal, isOpen: false });
     showToast(`Đã gửi thông báo cảnh cáo thành công đến "${notifyModal.recipientName}".`);
+  };
+
+  // Xử lý Bác bỏ khiếu nại báo cáo (Nội dung hợp lệ)
+  const handleDismissReport = async () => {
+    if (!handlingReport) return;
+    setIsSubmittingReport(true);
+    try {
+      await adminApi.resolveReport(handlingReport.id, {
+        status: 'dismissed',
+        resolutionNotes: moderationNote || 'Nội dung hợp lệ theo tiêu chuẩn cộng đồng',
+      });
+      resolveReport(handlingReport.id, 'dismissed');
+      setRealReports((prev) =>
+        prev.map((r) => (r.id === handlingReport.id ? { ...r, status: 'dismissed' } : r))
+      );
+      setHandlingReport(null);
+      showToast('Đã bác bỏ khiếu nại (Nội dung hợp lệ).');
+    } catch (err) {
+      showToast('Lỗi khi bác bỏ khiếu nại!');
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  // Xử lý Xác nhận vi phạm & Gắn nhãn vi phạm
+  const handleConfirmViolation = async () => {
+    if (!handlingReport) return;
+    setIsSubmittingReport(true);
+    try {
+      await adminApi.resolveReport(handlingReport.id, {
+        status: 'resolved',
+        action: 'hide',
+        resolutionNotes: moderationNote || 'Xác nhận vi phạm tiêu chuẩn cộng đồng',
+      });
+      resolveReport(handlingReport.id, 'resolved');
+      if (handlingReport.targetType === 'post') {
+        togglePostStatus(handlingReport.targetId, 'spam');
+      }
+      setRealReports((prev) =>
+        prev.map((r) => (r.id === handlingReport.id ? { ...r, status: 'resolved' } : r))
+      );
+      setHandlingReport(null);
+      showToast('Đã xác nhận vi phạm và cô lập nội dung thành công.');
+    } catch (err) {
+      showToast('Lỗi khi xử lý vi phạm!');
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   const handleAddHashtag = (e: React.FormEvent) => {
@@ -737,7 +813,18 @@ export const CommunityModerationPage: React.FC = () => {
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
                 <span>Danh Sách Người Dùng Báo Cáo Vi Phạm Từ Ứng Dụng Mobile</span>
               </h3>
-              <span className="text-xs text-slate-400">Xử lý minh bạch và công bằng</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={loadReports}
+                  disabled={isLoadingReports}
+                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isLoadingReports ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingReports ? 'Đang tải...' : 'Làm mới'}</span>
+                </button>
+                <span className="text-xs text-slate-400">Xử lý minh bạch và công bằng</span>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -753,29 +840,38 @@ export const CommunityModerationPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {reports.length === 0 ? (
+                  {isLoadingReports ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">
+                        <div className="flex items-center justify-center gap-2 text-indigo-600 font-bold">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Đang nạp danh sách báo cáo vi phạm từ hệ thống...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : displayReports.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">
                         Hiện tại không có báo cáo khiếu nại nào cần xử lý.
                       </td>
                     </tr>
                   ) : (
-                    reports.map((rep) => (
-                      <tr key={rep.id} className="hover:bg-indigo-50/30 transition-colors">
+                    displayReports.map((rep: any) => (
+                      <tr key={rep.id || rep._id} className="hover:bg-indigo-50/30 transition-colors">
                         <td className="py-3.5 px-5 font-bold text-slate-900 whitespace-nowrap">
-                          {rep.reporterName}
+                          {rep.reporterName || 'Người dùng ẩn danh'}
                         </td>
                         <td className="py-3.5 px-4 max-w-sm">
                           <span className="font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded text-[11px] border border-rose-100 mr-2">
                             {rep.reason}
                           </span>
-                          <span className="text-slate-600 text-xs">{rep.targetPreview}</span>
+                          <span className="text-slate-600 text-xs">{rep.targetPreview || rep.description || 'Không có bản xem trước'}</span>
                         </td>
                         <td className="py-3.5 px-4 font-mono text-slate-500 whitespace-nowrap">
                           {rep.targetType}: #{rep.targetId}
                         </td>
                         <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap font-mono text-[11px]">
-                          {rep.reportedAt}
+                          {rep.reportedAt ? new Date(rep.reportedAt).toLocaleString('vi-VN') : 'Vừa xong'}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {rep.status === 'pending' ? (
@@ -1500,28 +1596,21 @@ export const CommunityModerationPage: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => {
-                    resolveReport(handlingReport.id, 'dismissed');
-                    setHandlingReport(null);
-                    showToast('Đã bác bỏ khiếu nại (Nội dung hợp lệ).');
-                  }}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                  onClick={handleDismissReport}
+                  disabled={isSubmittingReport}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 rounded-lg flex items-center gap-1.5"
                 >
-                  Bác Bỏ (Nội dung hợp lệ)
+                  {isSubmittingReport && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Bác Bỏ (Nội dung hợp lệ)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    resolveReport(handlingReport.id, 'resolved');
-                    if (handlingReport.targetType === 'post') {
-                      togglePostStatus(handlingReport.targetId, 'spam');
-                    }
-                    setHandlingReport(null);
-                    showToast('Đã xác nhận vi phạm và cô lập nội dung.');
-                  }}
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-2xs"
+                  onClick={handleConfirmViolation}
+                  disabled={isSubmittingReport}
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-lg shadow-2xs flex items-center gap-1.5"
                 >
-                  Xác Nhận Vi Phạm & Gắn Spam
+                  {isSubmittingReport && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Xác Nhận Vi Phạm & Gắn Spam</span>
                 </button>
               </div>
             </div>
