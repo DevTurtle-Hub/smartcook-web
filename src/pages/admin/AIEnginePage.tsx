@@ -27,9 +27,13 @@ import {
   Flame,
   Award,
   Smartphone,
+  Save,
+  Loader2,
 } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
 import { aiApi, type ChatMessageContext, type ScanIngredientResult } from '../../api/ai.api';
+import { adminApi, type AIEngineStatusData } from '../../api/admin.api';
+import { toast } from '../../context/ToastContext';
 
 export const AIEnginePage: React.FC = () => {
   const { aiConfig, updateAIConfig } = useAdminStore();
@@ -41,34 +45,19 @@ export const AIEnginePage: React.FC = () => {
   const [newQuickPrompt, setNewQuickPrompt] = useState('');
   const [selectedModel, setSelectedModel] = useState<'gemini-2.5-flash' | 'gemini-1.5-pro' | 'smartcook-vision-v2'>('gemini-2.5-flash');
   const [isSavedPrompt, setIsSavedPrompt] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   // Vision Threshold State (Module 1: Smart Fridge Scanner)
   const [visionConfidenceThreshold, setVisionConfidenceThreshold] = useState(85);
   const [maxIngredientsPerScan, setMaxIngredientsPerScan] = useState(12);
   const [enableBoundingBoxes, setEnableBoundingBoxes] = useState(true);
 
+  // Dynamic Server & Status State from Backend
+  const [engineStatus, setEngineStatus] = useState<AIEngineStatusData | null>(null);
+
   // Dynamic Scan Logs from Backend
   const [realScanLogs, setRealScanLogs] = useState<ScanIngredientResult[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
-
-  // Tải nhật ký quét thực tế từ backend khi mount
-  useEffect(() => {
-    loadScanLogs();
-  }, []);
-
-  const loadScanLogs = async () => {
-    setIsLoadingLogs(true);
-    try {
-      const logs = await aiApi.getScanHistory(15);
-      if (logs && logs.length > 0) {
-        setRealScanLogs(logs);
-      }
-    } catch (err) {
-      console.warn('[AIEnginePage] Không thể nạp nhật ký scan:', err);
-    } finally {
-      setIsLoadingLogs(false);
-    }
-  };
 
   // Live Test Playground State (Hộp chat thử nghiệm phản hồi AI trực tiếp ngay trên trang)
   const [testInput, setTestInput] = useState('Trong tủ lạnh tôi còn 300g thịt heo và 2 quả cà chua thì nấu được món gì nhanh?');
@@ -91,25 +80,120 @@ export const AIEnginePage: React.FC = () => {
   ]);
   const [isSimulatingAI, setIsSimulatingAI] = useState(false);
 
-  // Lưu Prompt
-  const handleSaveSystemPrompt = () => {
-    updateAIConfig({ systemPrompt: promptText });
-    setIsSavedPrompt(true);
-    setTimeout(() => setIsSavedPrompt(false), 3000);
+  // Tải cấu hình, trạng thái AI Engine và nhật ký quét thực tế từ backend khi mount
+  useEffect(() => {
+    loadEngineConfig();
+    loadEngineStatus();
+    loadScanLogs();
+  }, []);
+
+  const loadEngineConfig = async () => {
+    try {
+      const cfg = await adminApi.getAIEngineConfig();
+      if (cfg) {
+        if (cfg.systemPrompt) setPromptText(cfg.systemPrompt);
+        if (cfg.selectedModel) setSelectedModel(cfg.selectedModel as any);
+        if (cfg.visionConfidenceThreshold) setVisionConfidenceThreshold(cfg.visionConfidenceThreshold);
+        if (cfg.maxIngredientsPerScan) setMaxIngredientsPerScan(cfg.maxIngredientsPerScan);
+        if (cfg.enableBoundingBoxes !== undefined) setEnableBoundingBoxes(cfg.enableBoundingBoxes);
+        if (cfg.quickPrompts && cfg.quickPrompts.length > 0) {
+          updateAIConfig({ quickPrompts: cfg.quickPrompts });
+        }
+      }
+    } catch (err) {
+      console.warn('[AIEnginePage] Không thể nạp cấu hình AI:', err);
+    }
+  };
+
+  const loadEngineStatus = async () => {
+    try {
+      const status = await adminApi.getAIEngineStatus();
+      if (status) {
+        setEngineStatus(status);
+      }
+    } catch (err) {
+      console.warn('[AIEnginePage] Không thể nạp trạng thái AI Engine:', err);
+    }
+  };
+
+  const loadScanLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const logs = await aiApi.getScanHistory(15);
+      if (logs && logs.length > 0) {
+        setRealScanLogs(logs);
+      }
+    } catch (err) {
+      console.warn('[AIEnginePage] Không thể nạp nhật ký scan:', err);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  // Lưu System Prompt & Model Parameters
+  const handleSaveSystemPrompt = async () => {
+    setIsSavingConfig(true);
+    try {
+      await adminApi.updateAIEngineConfig({
+        systemPrompt: promptText,
+        selectedModel,
+        quickPrompts: aiConfig.quickPrompts,
+      });
+      updateAIConfig({ systemPrompt: promptText });
+      setIsSavedPrompt(true);
+      toast.success('Đã lưu cấu hình System Prompt và tham số mô hình AI lên máy chủ!', {
+        title: 'AI Engine',
+      });
+      setTimeout(() => setIsSavedPrompt(false), 3000);
+    } catch (err) {
+      toast.error('Lỗi khi lưu cấu hình AI Engine!', { title: 'AI Engine' });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  // Lưu Ngưỡng Vision
+  const handleSaveVisionThresholds = async () => {
+    setIsSavingConfig(true);
+    try {
+      await adminApi.updateAIEngineConfig({
+        visionConfidenceThreshold,
+        maxIngredientsPerScan,
+        enableBoundingBoxes,
+      });
+      toast.success('Đã lưu thiết lập ngưỡng thị giác máy tính lên máy chủ!', {
+        title: 'Vision AI',
+      });
+    } catch (err) {
+      toast.error('Lỗi lưu ngưỡng thị giác!', { title: 'Vision AI' });
+    } finally {
+      setIsSavingConfig(false);
+    }
   };
 
   // Thêm Quick Prompt gợi ý
-  const handleAddQuickPrompt = (e: React.FormEvent) => {
+  const handleAddQuickPrompt = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuickPrompt.trim()) return;
-    updateAIConfig({ quickPrompts: [...aiConfig.quickPrompts, newQuickPrompt.trim()] });
+    const updated = [...aiConfig.quickPrompts, newQuickPrompt.trim()];
+    updateAIConfig({ quickPrompts: updated });
     setNewQuickPrompt('');
+    try {
+      await adminApi.updateAIEngineConfig({ quickPrompts: updated });
+    } catch (err) {
+      console.warn('Lỗi lưu quick prompt:', err);
+    }
   };
 
   // Xóa Quick Prompt
-  const handleRemoveQuickPrompt = (idx: number) => {
+  const handleRemoveQuickPrompt = async (idx: number) => {
     const updated = aiConfig.quickPrompts.filter((_, i) => i !== idx);
     updateAIConfig({ quickPrompts: updated });
+    try {
+      await adminApi.updateAIEngineConfig({ quickPrompts: updated });
+    } catch (err) {
+      console.warn('Lỗi cập nhật quick prompt:', err);
+    }
   };
 
   // Gửi test thử nghiệm trong Playground kết nối AI API thật
@@ -196,9 +280,21 @@ export const AIEnginePage: React.FC = () => {
 
         {/* Trạng thái Server AI Engine */}
         <div className="flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Gemini 2.5 Flash Engine: Sẵn Sàng (Latency 1.2s)</span>
+          <div
+            className={`flex items-center gap-2 px-3 py-1 border rounded-lg font-bold ${
+              engineStatus?.status === 'ready'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                engineStatus?.status === 'ready' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+            <span>
+              {engineStatus?.model || selectedModel}: {engineStatus?.status === 'ready' ? 'Sẵn Sàng' : 'Đang Kiểm Tra'} (Độ trễ {engineStatus?.latencyMs || 230}ms)
+            </span>
           </div>
         </div>
       </div>
@@ -430,6 +526,16 @@ export const AIEnginePage: React.FC = () => {
                   Điều chỉnh độ nhạy khi nhận diện thực phẩm từ ảnh chụp camera điện thoại của người dùng.
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={handleSaveVisionThresholds}
+                disabled={isSavingConfig}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
+              >
+                {isSavingConfig ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                <span>Lưu Ngưỡng Vision</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
