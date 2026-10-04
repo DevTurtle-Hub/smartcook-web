@@ -81,10 +81,7 @@ apiClient.interceptors.response.use(
         const newAccessToken = res.data.data.accessToken;
         const newRefreshToken = res.data.data.refreshToken;
 
-        useAuthStore.getState().setAccessToken(newAccessToken);
-        if (newRefreshToken) {
-          localStorage.setItem('smartcook_refresh_token', newRefreshToken);
-        }
+        useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
 
         processQueue(null, newAccessToken);
 
