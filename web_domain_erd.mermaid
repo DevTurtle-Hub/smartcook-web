@@ -1,0 +1,199 @@
+%% SmartCook Web - Logical Client Domain ERD
+%% IMPORTANT: These are TypeScript DTOs and Zustand state objects, NOT MongoDB collections.
+%% Persistent data belongs to smartcook-backend; local-only state is marked in comments.
+
+erDiagram
+    WEB_USER {
+        string id PK
+        string email
+        string firstName
+        string lastName
+        string fullName
+        string avatar
+        string role "user admin"
+        number chefExp
+        string level
+        boolean isActive
+        object preferences
+    }
+
+    AUTH_SESSION {
+        string accessToken
+        string refreshToken
+        boolean isAuthenticated
+        boolean isAdmin
+        string persistence "localStorage"
+    }
+
+    RECIPE_DTO {
+        string id PK
+        string title
+        string authorId FK
+        string categoryCode
+        number calories
+        number cookingTimeMinutes
+        number ratingAverage
+        object ingredients
+        object steps
+        object nutrition
+    }
+
+    FRIDGE_DTO {
+        string userId FK
+        object items "FridgeItemDTO array"
+        number totalItems
+    }
+
+    COOKING_RECORD_DTO {
+        string id PK
+        string userId FK
+        string recipeId FK
+        string recipeName
+        number rating
+        number xpEarned
+        string cookedAt
+    }
+
+    POST_DTO {
+        string id PK
+        string authorId FK
+        string recipeId FK "optional"
+        string caption
+        object images
+        object reactionCounts
+        number commentsCount
+        string status
+    }
+
+    COMMENT_DTO {
+        string id PK
+        string postId FK
+        string authorId FK
+        string parentCommentId FK "optional"
+        string content
+    }
+
+    CHAT_CONVERSATION_STATE {
+        string id PK
+        string partnerId FK
+        string partnerName
+        string lastMessage
+        number unreadCount
+        boolean isOnline
+        object messages "ChatMessage array"
+    }
+
+    CHAT_MESSAGE_STATE {
+        string id PK
+        string conversationId FK
+        string senderId FK
+        string text
+        string imageUri
+        boolean isMe
+        string createdAt
+    }
+
+    CART_ITEM_STATE {
+        string id PK "recipeId plus ingredient name"
+        string recipeId FK "optional"
+        string recipeTitle
+        string name
+        number amount
+        string unit
+        number price
+        boolean checked
+        string persistence "per-user localStorage"
+    }
+
+    SCAN_RESULT_DTO {
+        string id PK
+        string userId FK
+        string imageUrl
+        number accuracy
+        object ingredients
+        object pins
+        object suggestedRecipe
+    }
+
+    WEEKLY_PLAN_DTO {
+        string id PK
+        string userId FK
+        string weekStartDate
+        object days "PlannerDay array"
+    }
+
+    SHOPPING_ITEM_DTO {
+        string id PK
+        string userId FK
+        string recipeId FK "optional"
+        string name
+        string amount
+        boolean bought
+        boolean syncedToFridge
+    }
+
+    STORE_DTO {
+        string id PK
+        string name
+        string brand
+        string address
+        number latitude
+        number longitude
+        number distanceKm
+    }
+
+    MODERATION_REPORT_DTO {
+        string id PK
+        string reporterId FK
+        string targetType
+        string targetId FK
+        string reason
+        string status
+        string resolutionNotes
+    }
+
+    SYSTEM_SETTINGS_DTO {
+        string appName
+        string appVersion
+        string geminiApiKey
+        string cloudinaryName
+        string pushServiceKey
+        string visionEndpoint
+    }
+
+    AI_ENGINE_CONFIG_DTO {
+        string systemPrompt
+        string personaTone
+        string selectedModel
+        string quickPrompts "array"
+        number visionConfidenceThreshold
+        number maxIngredientsPerScan
+        boolean enableBoundingBoxes
+    }
+
+    WEB_USER ||--|| AUTH_SESSION : owns_current_session
+    WEB_USER ||--o{ RECIPE_DTO : authors
+    WEB_USER }o--o{ RECIPE_DTO : favorites
+    WEB_USER ||--o| FRIDGE_DTO : owns
+    WEB_USER ||--o{ COOKING_RECORD_DTO : records
+    RECIPE_DTO ||--o{ COOKING_RECORD_DTO : cooked_as
+    WEB_USER ||--o{ POST_DTO : publishes
+    RECIPE_DTO o|--o{ POST_DTO : shared_in
+    POST_DTO ||--o{ COMMENT_DTO : receives
+    WEB_USER ||--o{ COMMENT_DTO : writes
+    COMMENT_DTO o|--o{ COMMENT_DTO : replies_to
+    WEB_USER }o--o{ CHAT_CONVERSATION_STATE : participates
+    CHAT_CONVERSATION_STATE ||--o{ CHAT_MESSAGE_STATE : contains
+    WEB_USER ||--o{ CHAT_MESSAGE_STATE : sends
+    WEB_USER ||--o{ CART_ITEM_STATE : stores_locally
+    RECIPE_DTO o|--o{ CART_ITEM_STATE : source
+    WEB_USER ||--o{ SCAN_RESULT_DTO : creates
+    WEB_USER ||--o{ WEEKLY_PLAN_DTO : plans
+    RECIPE_DTO o|--o{ WEEKLY_PLAN_DTO : referenced_in_meal_slots
+    WEB_USER ||--o{ SHOPPING_ITEM_DTO : owns
+    RECIPE_DTO o|--o{ SHOPPING_ITEM_DTO : source
+    WEB_USER ||--o{ MODERATION_REPORT_DTO : submits_or_resolves
+    POST_DTO o|--o{ MODERATION_REPORT_DTO : possible_target
+    COMMENT_DTO o|--o{ MODERATION_REPORT_DTO : possible_target
+    RECIPE_DTO o|--o{ MODERATION_REPORT_DTO : possible_target
+
