@@ -60,8 +60,15 @@ export const cookingHistoryApi = {
 
   getMyCookingHistory: async (): Promise<CookingRecordDTO[]> => {
     try {
-      const res = await apiClient.get<ApiResponse<CookingRecordDTO[]>>('/cooking-history');
-      return res.data.data;
+      const res = await apiClient.get<ApiResponse<any>>('/cooking-history');
+      const raw = res.data.data;
+      if (Array.isArray(raw)) {
+        return raw;
+      }
+      if (raw && Array.isArray(raw.items)) {
+        return raw.items;
+      }
+      return [];
     } catch (err: any) {
       console.warn('[SmartCook Web] getMyCookingHistory fallback:', err.message);
       return [];
