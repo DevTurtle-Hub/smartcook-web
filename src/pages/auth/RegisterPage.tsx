@@ -183,7 +183,7 @@ export const RegisterPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
-              className="w-full pl-11 pr-11 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border border-slate-200/90 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs"
+              className="w-full pl-11 pr-11 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border border-slate-200/90 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
             />
             <button
               type="button"
@@ -207,7 +207,7 @@ export const RegisterPage: React.FC = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu"
-              className={`w-full pl-11 pr-11 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs ${
+              className={`w-full pl-11 pr-11 py-3 bg-slate-50 hover:bg-orange-50/20 focus:bg-white border rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 transition-all font-medium text-slate-900 placeholder-slate-400 shadow-2xs [&::-ms-reveal]:hidden [&::-ms-clear]:hidden ${
                 confirmPassword && password !== confirmPassword
                   ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/30'
                   : confirmPassword && password === confirmPassword
