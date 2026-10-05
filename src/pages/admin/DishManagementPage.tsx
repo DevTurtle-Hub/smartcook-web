@@ -68,7 +68,7 @@ export const DishManagementPage: React.FC = () => {
             calories: r.calories || 350,
             macro: r.macro || { protein: 20, carbs: 30, fat: 10, fiber: 2 },
             estimatedCostVnd: r.estimatedCostVnd || 50000,
-            image: r.imageUrl || r.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
+            image: resolveRecipeImage(r.imageUrl || r.image, r.title),
             author: r.author || 'SmartCook MasterChef',
             status: 'published',
             rating: r.rating || 4.8,

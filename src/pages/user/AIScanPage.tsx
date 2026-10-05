@@ -25,11 +25,16 @@ import { aiApi, type ScanIngredientResult, type ScanDetectedIngredient, type Sca
 import { fridgeApi } from '../../api/fridge.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { toast } from '../../context/ToastContext';
+import { AuthRequiredModal } from '../../components/common/AuthRequiredModal';
+import { PreviewModeBanner } from '../../components/common/PreviewModeBanner';
 
 export const AIScanPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Modal yêu cầu đăng nhập khi chưa có tài khoản
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(!isAuthenticated);
 
   // Trạng thái chọn ảnh & phân tích
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -69,6 +74,11 @@ export const AIScanPage: React.FC = () => {
 
   // Xử lý khi người dùng chọn file ảnh
   const handleFileSelect = (file: File) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     if (!file.type.startsWith('image/')) {
       const msg = 'Vui lòng chỉ chọn tệp hình ảnh (PNG, JPG, JPEG, WEBP)';
       setErrorMessage(msg);
@@ -104,6 +114,10 @@ export const AIScanPage: React.FC = () => {
   // Kéo thả file
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     const file = e.dataTransfer.files?.[0];
     if (file) {
       handleFileSelect(file);
@@ -132,7 +146,7 @@ export const AIScanPage: React.FC = () => {
   // Thêm 1 nguyên liệu vào tủ lạnh
   const handleAddSingleItemToFridge = async (ingredient: ScanDetectedIngredient) => {
     if (!isAuthenticated) {
-      navigate('/login');
+      setShowAuthModal(true);
       return;
     }
 
@@ -163,7 +177,7 @@ export const AIScanPage: React.FC = () => {
   // Thêm tất cả nguyên liệu nhận diện vào tủ lạnh (1-Click)
   const handleAddAllToFridge = async () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      setShowAuthModal(true);
       return;
     }
 
@@ -244,6 +258,13 @@ export const AIScanPage: React.FC = () => {
       {/* Header đồng bộ */}
       <UserHeader />
 
+      {/* Banner xem trước nếu chưa đăng nhập */}
+      <PreviewModeBanner
+        featureName="AI Camera Scan"
+        onOpenAuthModal={() => setShowAuthModal(true)}
+        redirectPath="/scan"
+      />
+
       {/* Decorative background glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] bg-orange-200/20 rounded-full blur-[130px]" />
@@ -281,7 +302,13 @@ export const AIScanPage: React.FC = () => {
               <span>Máy Quét AI (Camera & Upload)</span>
             </button>
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  setShowAuthModal(true);
+                  return;
+                }
+                setActiveTab('history');
+              }}
               className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 activeTab === 'history'
                   ? 'bg-orange-500 text-white shadow-sm'
@@ -391,7 +418,13 @@ export const AIScanPage: React.FC = () => {
 
                 {!previewUrl ? (
                   <div 
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      fileInputRef.current?.click();
+                    }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleDrop}
                     className="group cursor-pointer border-2 border-dashed border-orange-200 hover:border-orange-500 bg-orange-50/40 hover:bg-orange-50/80 rounded-2xl p-10 sm:p-14 text-center space-y-4 transition-all duration-300"
@@ -781,6 +814,14 @@ export const AIScanPage: React.FC = () => {
         )}
 
       </div>
+
+      {/* Modal yêu cầu đăng nhập khi khách tương tác */}
+      <AuthRequiredModal
+        isOpen={showAuthModal && !isAuthenticated}
+        onClose={() => setShowAuthModal(false)}
+        featureType="camera"
+        redirectPath="/scan"
+      />
     </div>
   );
 };

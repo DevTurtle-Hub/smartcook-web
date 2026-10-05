@@ -108,6 +108,30 @@ export const authApi = {
     }
   },
 
+  updateProfile: async (data: { firstName?: string; lastName?: string; avatar?: string } | FormData): Promise<User> => {
+    try {
+      const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+      const headers = isFormData ? { 'Content-Type': 'multipart/form-data' } : {};
+      const res = await apiClient.put<ApiResponse<any>>('/auth/profile', data, { headers });
+      const u = res.data.data;
+      return {
+        _id: u._id || u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        fullName: u.fullName || `${u.lastName || ''} ${u.firstName || ''}`.trim(),
+        avatar: u.avatar,
+        role: u.role === 'admin' ? 'admin' : 'user',
+        chefExp: u.chefExp ?? 0,
+        level: u.level || 'Tập sự',
+        isActive: u.isActive ?? true,
+        preferences: u.preferences,
+      };
+    } catch (err: any) {
+      throw new Error(err.response?.data?.message || 'Không thể cập nhật hồ sơ người dùng.');
+    }
+  },
+
   updateSurvey: async (preferences: any): Promise<User> => {
     try {
       const res = await apiClient.post<ApiResponse<any>>('/auth/survey', preferences);

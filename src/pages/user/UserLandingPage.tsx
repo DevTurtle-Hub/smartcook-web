@@ -582,6 +582,18 @@ export const UserLandingPage: React.FC = () => {
                           ))}
                         </div>
                       </div>
+
+                      {/* Nút hành động trực tiếp vào màn hình Tủ Lạnh Thông Minh */}
+                      <div className="pt-2">
+                        <Link
+                          to="/my-kitchen"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                          <Refrigerator className="w-4 h-4" />
+                          <span>Mở Tủ Lạnh Thông Minh Của Bạn</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </div>
                   )}
 
@@ -670,6 +682,18 @@ export const UserLandingPage: React.FC = () => {
                           ))}
                         </div>
                       </div>
+
+                      {/* Nút hành động trực tiếp vào màn hình AI Camera Scan */}
+                      <div className="pt-2">
+                        <Link
+                          to="/scan"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Trải Nghiệm Quét Ảnh AI Camera Ngay</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </div>
                   )}
 
@@ -738,7 +762,7 @@ export const UserLandingPage: React.FC = () => {
                           <div className="bg-white rounded-[26px] p-3 shadow-sm hover:shadow-md border border-slate-200/80 transition-all flex flex-col justify-between group">
                             <div className="relative w-full aspect-square rounded-[20px] overflow-hidden bg-slate-100">
                               <img 
-                                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80" 
+                                src="https://images.unsplash.com/photo-1525755662778-989d0524087e?w=600&auto=format&fit=crop&q=80" 
                                 alt="Cơm Đùi Gà Trứng Ốp" 
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />

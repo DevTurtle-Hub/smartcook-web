@@ -1,0 +1,113 @@
+%% SmartCook Web - Overall Frontend Architecture
+%% Source of truth: src/App.tsx, src/routes, src/store, src/api and src/services.
+
+flowchart TB
+    subgraph Actors[Actors]
+        Guest[Guest]
+        User[Authenticated User]
+        Admin[Admin User]
+    end
+
+    subgraph Delivery[Build and Delivery]
+        Vite[Vite Build]
+        Nginx[Nginx Static Server]
+        Browser[Web Browser]
+    end
+
+    subgraph Bootstrap[React Application Bootstrap]
+        Main[main.tsx and React StrictMode]
+        ErrorBoundary[Global ErrorBoundary]
+        QueryProvider[TanStack QueryClientProvider]
+        ToastProvider[ToastProvider]
+        Router[BrowserRouter]
+        AppRoutes[AppRoutes with React.lazy and Suspense]
+    end
+
+    subgraph RouteGroups[Route Groups]
+        AuthRoutes[Auth Routes Login and Register]
+        PublicRoutes[Public Routes Landing Recipes Community]
+        UserRoutes[User Routes Kitchen Scan Profile]
+        AdminRoutes[Admin Routes Dashboard and Management]
+        UserGuard[ProtectedUserRoute]
+        AdminGuard[AdminLayout Role Guard]
+    end
+
+    subgraph Pages[Page and Feature Layer]
+        AuthPages[LoginPage and RegisterPage]
+        PublicPages[Landing RecipeList RecipeDetail Community]
+        UserPages[MyKitchen AIScan Profile]
+        AdminPages[Dashboard Dishes Users Community AI Marketing Stores Settings]
+        SharedComponents[UserHeader CartDrawer ChatModal AI Assistant StoreModal]
+    end
+
+    subgraph ClientState[Client State and Cache]
+        AuthStore[Zustand useAuthStore]
+        CartStore[Zustand useCartStore]
+        ChatStore[Zustand useChatStore]
+        AdminStore[Zustand useAdminStore]
+        QueryCache[TanStack Query Cache]
+        LocalStorage[(Browser localStorage)]
+    end
+
+    subgraph Integration[Integration Layer]
+        ApiModules[Auth Recipe Ingredient Fridge History AI Community Chat Planner Store Admin APIs]
+        AxiosClient[Axios API Client]
+        RequestInterceptor[JWT Request Interceptor]
+        RefreshInterceptor[401 Refresh Token Queue]
+        SocketService[Socket.IO Client Service]
+        GoogleOAuth[Google OAuth React Provider]
+        BrowserAPIs[Geolocation Notifications Audio and File APIs]
+    end
+
+    subgraph Backend[SmartCook Backend]
+        RestAPI[Express REST API v1]
+        SocketGateway[Socket.IO Gateway]
+        UploadAPI[Multipart Upload Endpoints]
+    end
+
+    Guest --> Browser
+    User --> Browser
+    Admin --> Browser
+    Vite --> Nginx --> Browser
+    Browser --> Main --> ErrorBoundary --> QueryProvider --> ToastProvider --> Router --> AppRoutes
+
+    AppRoutes --> AuthRoutes --> AuthPages
+    AppRoutes --> PublicRoutes --> PublicPages
+    AppRoutes --> UserGuard --> UserRoutes --> UserPages
+    AppRoutes --> AdminGuard --> AdminRoutes --> AdminPages
+    PublicPages --> SharedComponents
+    UserPages --> SharedComponents
+    AdminPages --> SharedComponents
+
+    AuthPages --> AuthStore
+    UserPages --> AuthStore
+    PublicPages --> AuthStore
+    AdminGuard --> AuthStore
+    SharedComponents --> AuthStore
+    SharedComponents --> CartStore
+    SharedComponents --> ChatStore
+    AdminPages --> AdminStore
+    PublicPages --> QueryCache
+    UserPages --> QueryCache
+
+    AuthStore <--> LocalStorage
+    CartStore <--> LocalStorage
+    ChatStore --> AuthStore
+    CartStore --> AuthStore
+
+    AuthPages --> ApiModules
+    PublicPages --> ApiModules
+    UserPages --> ApiModules
+    AdminPages --> ApiModules
+    ChatStore --> ApiModules
+    ApiModules --> AxiosClient --> RequestInterceptor --> RestAPI
+    RestAPI -. 401 .-> RefreshInterceptor
+    RefreshInterceptor --> AuthStore
+    RefreshInterceptor --> RestAPI
+    ChatStore <--> SocketService <--> SocketGateway
+    PublicPages <--> SocketService
+    AuthPages --> GoogleOAuth
+    UserPages --> BrowserAPIs
+    SharedComponents --> BrowserAPIs
+    ApiModules --> UploadAPI
+

@@ -14,6 +14,7 @@ import {
 import { useChatStore, ChatConversation } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { socketService } from '../../services/socket.service';
+import { AuthRequiredModal } from '../common/AuthRequiredModal';
 
 export const CulinaryChatModal: React.FC = () => {
   const { 
@@ -66,6 +67,19 @@ export const CulinaryChatModal: React.FC = () => {
   }, []);
 
   if (!isOpen) return null;
+
+  // Nếu chưa đăng nhập, hiển thị Modal xác thực cao cấp chuẩn UX thay vì khung trắng rỗng
+  if (!isAuthenticated) {
+    return (
+      <AuthRequiredModal
+        isOpen={isOpen}
+        onClose={closeChat}
+        featureType="chat"
+        redirectPath={window.location.pathname}
+        allowPreview={true}
+      />
+    );
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -123,32 +137,7 @@ export const CulinaryChatModal: React.FC = () => {
 
       {/* Khung chat chính */}
       <div className="relative w-[98vw] max-w-[1440px] h-[93vh] bg-[#fdfbf7] rounded-3xl shadow-2xl border border-amber-200/70 flex overflow-hidden animate-in zoom-in-95 duration-200">
-        
-        {!isAuthenticated ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner">
-              <ChefHat className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-black text-slate-800">
-              Kết Nối Cùng Cộng Đồng Bếp SmartCook
-            </h3>
-            <p className="text-sm text-slate-500 max-w-md">
-              Vui lòng đăng nhập tài khoản để trao đổi kinh nghiệm ẩm thực, nhắn tin trực tiếp với các đầu bếp tài năng và bạn bè yêu bếp.
-            </p>
-            <button
-              onClick={() => {
-                closeChat();
-                navigate('/login');
-              }}
-              className="mt-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm shadow-md shadow-orange-500/25 flex items-center gap-2 transition-all hover:scale-105"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Đăng nhập ngay</span>
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* ================= CỘT TRÁI: DANH SÁCH HỘI THOẠI ================= */}
+        {/* ================= CỘT TRÁI: DANH SÁCH HỘI THOẠI ================= */}
             <div className="w-80 sm:w-96 bg-white/95 border-r border-amber-100 flex flex-col shrink-0 h-full">
               
               {/* Header Danh sách */}
@@ -425,9 +414,6 @@ export const CulinaryChatModal: React.FC = () => {
                 <p className="text-xs max-w-sm">Trao đổi kinh nghiệm nấu ăn, hỏi mẹo nêm nếm gia vị và chia sẻ niềm vui ẩm thực.</p>
               </div>
             )}
-          </>
-        )}
-
       </div>
     </div>
   );

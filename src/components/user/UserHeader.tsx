@@ -226,7 +226,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 }`}
               >
                 <Utensils className="w-4 h-4" />
-                <span>Nguyên Liệu</span>
+                <span>Kho Món Ăn</span>
                 {location.pathname.startsWith('/recipes') && (
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
                 )}
@@ -239,20 +239,39 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 }`}
               >
                 <Refrigerator className="w-4 h-4 text-orange-500" />
-                <span>Bếp Của Tôi</span>
+                <span>Tủ Lạnh Thông Minh</span>
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                 {location.pathname === '/my-kitchen' && (
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
                 )}
               </Link>
 
-              <div className="hidden xl:flex items-center gap-5 text-xs text-slate-500 font-semibold whitespace-nowrap">
-                <a href="/#module-fridge" className="hover:text-orange-600 transition-colors">Tủ Lạnh Thông Minh</a>
-                <a href="/#module-ai-scan" className="hover:text-orange-600 transition-colors flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-                  <span>AI Camera</span>
-                </a>
-              </div>
+              <Link 
+                to="/scan" 
+                className={`group relative flex items-center gap-2 py-7 text-sm font-bold tracking-tight transition-colors ${
+                  location.pathname === '/scan' ? 'text-orange-600' : 'text-slate-600 hover:text-orange-500'
+                }`}
+              >
+                <Camera className="w-4 h-4 text-orange-500" />
+                <span>AI Camera</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                {location.pathname === '/scan' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
+                )}
+              </Link>
+
+              <Link 
+                to="/community" 
+                className={`group relative flex items-center gap-2 py-7 text-sm font-bold tracking-tight transition-colors ${
+                  location.pathname === '/community' ? 'text-orange-600' : 'text-slate-600 hover:text-orange-500'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4 text-orange-500" />
+                <span>Cộng Đồng</span>
+                {location.pathname === '/community' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
+                )}
+              </Link>
             </div>
           )}
         </nav>
@@ -263,8 +282,12 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
           {/* NÚT TIN NHẮN BẾP (CULINARY CHAT LOUNGE) */}
           <button
             onClick={toggleChat}
-            className="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white hover:bg-orange-50/80 border border-slate-200/90 hover:border-orange-300 transition-all duration-200 shadow-2xs hover:shadow-xs group"
-            title="Mở phòng chat giao lưu ẩm thực"
+            className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs group cursor-pointer ${
+              isAuthenticated
+                ? 'bg-white hover:bg-orange-50/80 border border-slate-200/90 hover:border-orange-300'
+                : 'bg-gradient-to-r from-orange-50/90 via-amber-50/80 to-white hover:from-orange-100/90 hover:to-amber-100/90 border border-orange-200/90 hover:border-orange-300 text-slate-800 hover:scale-[1.02] active:scale-95'
+            }`}
+            title={isAuthenticated ? "Mở phòng chat giao lưu ẩm thực" : "Giao lưu bếp & Nhắn tin đầu bếp (Yêu cầu đăng nhập)"}
           >
             <div className="relative">
               <MessageCircle className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
@@ -274,10 +297,21 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                   <span className="relative z-10">{totalUnreadChats}</span>
                 </span>
               )}
+              {!isAuthenticated && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                </span>
+              )}
             </div>
             <span className="hidden sm:inline font-bold text-xs text-slate-800 group-hover:text-orange-600 transition-colors">
               Nhắn tin
             </span>
+            {!isAuthenticated && (
+              <span className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[9px] font-extrabold tracking-tight">
+                Live
+              </span>
+            )}
           </button>
 
           {/* NÚT GIỎ HÀNG ĐI CHỢ (NỔI BẬT Ở HEADER) */}
@@ -485,7 +519,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                   }`}
                 >
                   <Utensils className="w-4 h-4" />
-                  <span>Nguyên Liệu</span>
+                  <span>Kho Món Ăn</span>
                 </Link>
 
                 <Link
@@ -497,9 +531,34 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 >
                   <div className="flex items-center gap-3">
                     <Refrigerator className="w-4 h-4" />
-                    <span>Bếp Của Tôi</span>
+                    <span>Tủ Lạnh Thông Minh</span>
                   </div>
                   <Sparkles className="w-4 h-4 text-amber-500" />
+                </Link>
+
+                <Link
+                  to="/scan"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold ${
+                    location.pathname === '/scan' ? 'bg-orange-500 text-white' : 'text-slate-800 hover:bg-orange-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Camera className="w-4 h-4" />
+                    <span>AI Camera Scan</span>
+                  </div>
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                </Link>
+
+                <Link
+                  to="/community"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold ${
+                    location.pathname === '/community' ? 'bg-orange-500 text-white' : 'text-slate-800 hover:bg-orange-50'
+                  }`}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Cộng Đồng Ẩm Thực</span>
                 </Link>
               </div>
             )}

@@ -124,7 +124,7 @@ export const RecipeDetailPage: React.FC = () => {
     _id: id || 'seed-chicken-rice',
     title: 'Cơm Đùi Gà Trứng Ốp',
     description: 'Đùi gà rim sốt mật ong đậm đà ăn kèm trứng ốp la lòng đào béo ngậy, bơ sáp và cà chua bi thanh mát. Nhanh gọn, giàu protein và cân đối vi chất.',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800&q=80',
     category: 'Tiện lợi',
     cookingTimeMinutes: 12,
     difficulty: 'Nhanh gọn',

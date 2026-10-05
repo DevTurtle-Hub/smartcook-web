@@ -1,0 +1,92 @@
+%% SmartCook Web - Admin Portal Architecture
+%% Admin is a normal authenticated user with role = "admin".
+
+flowchart TB
+    Admin[Admin User]
+    AuthStore[useAuthStore]
+    AdminGuard[AdminLayout Guard: authenticated and isAdmin]
+
+    subgraph AdminRoutes[Lazy-loaded Admin Routes]
+        Dashboard[DashboardPage]
+        Dishes[DishManagementPage]
+        Community[CommunityModerationPage]
+        AIEngine[AIEnginePage]
+        Users[UserManagementPage]
+        Marketing[MarketingPage]
+        Stores[SupermarketManagementPage]
+        Settings[SystemSettingsPage]
+    end
+
+    subgraph State[Admin Client State]
+        AdminStore[useAdminStore]
+        KPI[KPI and Dashboard State]
+        RecipeState[Recipes and Contributions]
+        CommunityState[Posts and Reports]
+        UserState[User Management]
+        MarketingState[Notifications and Tasks]
+        AIState[AI Configuration]
+    end
+
+    subgraph APIs[Backend API Modules]
+        AdminAPI[adminApi]
+        RecipeAPI[recipeApi]
+        IngredientAPI[ingredientApi]
+        CommunityAPI[communityApi]
+        AIAPI[aiApi]
+        StoreAPI[storeApi]
+        Axios[Axios Client with JWT Refresh]
+    end
+
+    subgraph Backend[Protected Backend Resources]
+        DashboardEndpoint[Admin Dashboard]
+        UserEndpoints[Users Status and Role]
+        ReportEndpoints[Reports and Moderation]
+        SettingsEndpoints[System Settings]
+        AIEndpoints[AI Engine Config and Status]
+        RecipeEndpoints[Recipes and Ingredients]
+        StoreEndpoints[Store CRUD]
+    end
+
+    Admin --> AuthStore --> AdminGuard
+    AdminGuard --> Dashboard
+    AdminGuard --> Dishes
+    AdminGuard --> Community
+    AdminGuard --> AIEngine
+    AdminGuard --> Users
+    AdminGuard --> Marketing
+    AdminGuard --> Stores
+    AdminGuard --> Settings
+
+    Dashboard --> AdminStore --> KPI
+    Dishes --> AdminStore --> RecipeState
+    Community --> AdminStore --> CommunityState
+    Users --> AdminStore --> UserState
+    Marketing --> AdminStore --> MarketingState
+    AIEngine --> AdminStore --> AIState
+
+    Dashboard --> AdminAPI
+    Dishes --> RecipeAPI
+    Dishes --> IngredientAPI
+    Community --> CommunityAPI
+    Community --> AdminAPI
+    AIEngine --> AIAPI
+    AIEngine --> AdminAPI
+    Users --> AdminAPI
+    Stores --> StoreAPI
+    Settings --> AdminAPI
+
+    AdminAPI --> Axios
+    RecipeAPI --> Axios
+    IngredientAPI --> Axios
+    CommunityAPI --> Axios
+    AIAPI --> Axios
+    StoreAPI --> Axios
+
+    Axios --> DashboardEndpoint
+    Axios --> UserEndpoints
+    Axios --> ReportEndpoints
+    Axios --> SettingsEndpoints
+    Axios --> AIEndpoints
+    Axios --> RecipeEndpoints
+    Axios --> StoreEndpoints
+
