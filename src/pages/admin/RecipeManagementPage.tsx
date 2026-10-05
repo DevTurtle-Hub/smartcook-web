@@ -93,7 +93,7 @@ export const RecipeManagementPage: React.FC = () => {
       rating: 4.7,
       ratingsCount: 110,
       status: 'published',
-      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80',
       author: 'SmartCook MasterChef',
       macro: { p: 32, c: 12, f: 38 },
     },
