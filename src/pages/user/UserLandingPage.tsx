@@ -738,7 +738,7 @@ export const UserLandingPage: React.FC = () => {
                           <div className="bg-white rounded-[26px] p-3 shadow-sm hover:shadow-md border border-slate-200/80 transition-all flex flex-col justify-between group">
                             <div className="relative w-full aspect-square rounded-[20px] overflow-hidden bg-slate-100">
                               <img 
-                                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80" 
+                                src="https://images.unsplash.com/photo-1525755662778-989d0524087e?w=600&auto=format&fit=crop&q=80" 
                                 alt="Cơm Đùi Gà Trứng Ốp" 
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
