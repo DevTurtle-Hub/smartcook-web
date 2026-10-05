@@ -1,0 +1,95 @@
+%% SmartCook Web - Guest and User Experience Architecture
+
+flowchart LR
+    Guest[Guest]
+    User[Authenticated User]
+
+    subgraph Routes[Public and User Routes]
+        Landing[Landing and Showcase]
+        Recipes[Recipe List]
+        RecipeDetail[Recipe Detail]
+        Community[Community Feed]
+        Kitchen[My Kitchen]
+        Scan[AI Scan]
+        Profile[Profile - Protected]
+        Login[Login and Register]
+    end
+
+    subgraph Features[Shared User Features]
+        Header[UserHeader]
+        Cart[GroceryCartDrawer]
+        Chat[CulinaryChatModal]
+        ChefAI[FloatingChefAssistant]
+        NearbyStores[NearbySupermarketsModal]
+        Toast[Toast Notifications]
+    end
+
+    subgraph State[Client State]
+        AuthStore[useAuthStore]
+        CartStore[useCartStore]
+        ChatStore[useChatStore]
+        QueryCache[TanStack Query Cache]
+        LocalStorage[(localStorage)]
+    end
+
+    subgraph APIs[Backend Integrations]
+        AuthAPI[authApi]
+        RecipeAPI[recipeApi]
+        FridgeAPI[fridgeApi]
+        HistoryAPI[cookingHistoryApi]
+        AIAPI[aiApi]
+        CommunityAPI[communityApi]
+        ChatAPI[chatApi]
+        PlannerAPI[plannerApi]
+        StoreAPI[storeApi]
+        Socket[Socket.IO Service]
+    end
+
+    Guest --> Landing
+    Guest --> Recipes
+    Guest --> RecipeDetail
+    Guest --> Community
+    Guest --> Login
+    Login --> AuthAPI --> AuthStore
+    AuthStore <--> LocalStorage
+    AuthStore --> User
+
+    User --> Landing
+    User --> Recipes
+    User --> RecipeDetail
+    User --> Community
+    User --> Kitchen
+    User --> Scan
+    User --> Profile
+
+    Landing --> Header
+    Recipes --> RecipeAPI
+    RecipeDetail --> RecipeAPI
+    RecipeDetail --> HistoryAPI
+    RecipeDetail --> CartStore
+    Kitchen --> FridgeAPI
+    Kitchen --> CartStore
+    Scan --> AIAPI
+    Scan --> FridgeAPI
+    Profile --> AuthAPI
+    Profile --> HistoryAPI
+    Community --> CommunityAPI
+    Community --> RecipeAPI
+    Community <--> Socket
+
+    Header --> AuthStore
+    Header --> CartStore
+    Header --> ChatStore
+    CartStore <--> LocalStorage
+    ChatStore --> ChatAPI
+    ChatStore <--> Socket
+    Header --> Cart
+    Header --> Chat
+    ChefAI --> AIAPI
+    NearbyStores --> StoreAPI
+    NearbyStores --> CartStore
+    Recipes --> QueryCache
+    Community --> QueryCache
+    Kitchen --> Toast
+    Scan --> Toast
+
