@@ -32,6 +32,8 @@ import { recipeApi } from '../../api/recipe.api';
 import { communityApi } from '../../api/community.api';
 import { socketService } from '../../services/socket.service';
 import { toast } from '../../context/ToastContext';
+import { AuthRequiredModal } from '../../components/common/AuthRequiredModal';
+import { PreviewModeBanner } from '../../components/common/PreviewModeBanner';
 
 // Format relative time helper
 const formatRelativeTime = (dateString?: string) => {
@@ -56,6 +58,9 @@ export const CommunityPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { startChatWithUser } = useChatStore();
   const navigate = useNavigate();
+
+  // Auth requirement modal state
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(!isAuthenticated);
 
   // Posts Feed State
   const [posts, setPosts] = useState<Post[]>([]);
@@ -315,7 +320,7 @@ export const CommunityPage: React.FC = () => {
   // Real React handler with optimistic UI update
   const handleReact = async (postId: string, type: ReactionType) => {
     if (!isAuthenticated) {
-      navigate('/login');
+      setShowAuthModal(true);
       return;
     }
 
@@ -357,7 +362,7 @@ export const CommunityPage: React.FC = () => {
   const handleCreatePost = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!isAuthenticated) {
-      navigate('/login');
+      setShowAuthModal(true);
       return;
     }
     if (!newPostCaption.trim() && selectedImages.length === 0) return;
@@ -439,7 +444,7 @@ export const CommunityPage: React.FC = () => {
   // Real Add Comment handler
   const handleSendComment = async (postId: string) => {
     if (!isAuthenticated) {
-      navigate('/login');
+      setShowAuthModal(true);
       return;
     }
     const text = commentInputs[postId]?.trim();
@@ -495,6 +500,13 @@ export const CommunityPage: React.FC = () => {
     <div className="min-h-screen bg-[#faf8f5] text-slate-900 font-sans selection:bg-orange-500 selection:text-white pb-24">
       {/* Header Đồng Bộ */}
       <UserHeader />
+
+      {/* Banner xem trước nếu chưa đăng nhập */}
+      <PreviewModeBanner
+        featureName="Cộng Đồng Ẩm Thực"
+        onOpenAuthModal={() => setShowAuthModal(true)}
+        redirectPath="/community"
+      />
 
       {/* Decorative background glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -573,14 +585,21 @@ export const CommunityPage: React.FC = () => {
           </div>
 
           {/* Ô nhập nội dung chính */}
-          <div className="relative">
+          <div 
+            className="relative"
+            onClick={() => {
+              if (!isAuthenticated) {
+                setShowAuthModal(true);
+              }
+            }}
+          >
             <textarea
-              placeholder={isAuthenticated ? "Hôm nay bạn nấu được món gì ngon? Chia sẻ bí quyết, cảm nhận và hình ảnh thành quả cùng cộng đồng..." : "Vui lòng đăng nhập để đăng bài viết lên cộng đồng..."}
-              disabled={!isAuthenticated}
+              placeholder={isAuthenticated ? "Hôm nay bạn nấu được món gì ngon? Chia sẻ bí quyết, cảm nhận và hình ảnh thành quả cùng cộng đồng..." : "Bấm vào đây để đăng nhập và chia sẻ khoảnh khắc bếp của bạn..."}
+              readOnly={!isAuthenticated}
               value={newPostCaption}
               onChange={(e) => setNewPostCaption(e.target.value)}
               rows={3}
-              className="w-full bg-slate-50/70 hover:bg-slate-50 focus:bg-white rounded-2xl p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 border border-slate-200/80 focus:border-orange-300 resize-none transition-all leading-relaxed"
+              className="w-full bg-slate-50/70 hover:bg-slate-50 focus:bg-white rounded-2xl p-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 border border-slate-200/80 focus:border-orange-300 resize-none transition-all leading-relaxed cursor-pointer"
             />
           </div>
 
@@ -819,7 +838,7 @@ export const CommunityPage: React.FC = () => {
             {/* Nút Đăng Bài Hoàn Chỉnh */}
             <button
               onClick={() => handleCreatePost()}
-              disabled={!isAuthenticated || isPublishing || (!newPostCaption.trim() && selectedImages.length === 0)}
+              disabled={isPublishing || (isAuthenticated && !newPostCaption.trim() && selectedImages.length === 0)}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 text-white text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-95"
             >
               {isPublishing ? (
@@ -1136,12 +1155,18 @@ export const CommunityPage: React.FC = () => {
                         {user?._id !== post.author?._id && (
                           <button
                             type="button"
-                            onClick={() => startChatWithUser({
-                              id: post.author?._id || '',
-                              name: authorName,
-                              avatar: authorAvatar,
-                              role: 'Chủ Bài Đăng'
-                            })}
+                            onClick={() => {
+                              if (!isAuthenticated) {
+                                setShowAuthModal(true);
+                                return;
+                              }
+                              startChatWithUser({
+                                id: post.author?._id || '',
+                                name: authorName,
+                                avatar: authorAvatar,
+                                role: 'Chủ Bài Đăng'
+                              });
+                            }}
                             className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200/80 transition-all active:scale-95"
                           >
                             <MessageCircle className="w-3.5 h-3.5 text-orange-600" />
@@ -1305,12 +1330,18 @@ export const CommunityPage: React.FC = () => {
                                 {user?._id !== c.authorId && (
                                   <button
                                     type="button"
-                                    onClick={() => startChatWithUser({
-                                      id: c.authorId || `comment-author-${idx}`,
-                                      name: c.author,
-                                      avatar: c.avatar,
-                                      role: 'Thành Viên Bình Luận'
-                                    })}
+                                    onClick={() => {
+                                      if (!isAuthenticated) {
+                                        setShowAuthModal(true);
+                                        return;
+                                      }
+                                      startChatWithUser({
+                                        id: c.authorId || `comment-author-${idx}`,
+                                        name: c.author,
+                                        avatar: c.avatar,
+                                        role: 'Thành Viên Bình Luận'
+                                      });
+                                    }}
                                     className="opacity-0 group-hover/comment:opacity-100 inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 py-0.5 rounded-lg transition-all"
                                     title={`Nhắn tin với ${c.author}`}
                                   >
@@ -1329,18 +1360,23 @@ export const CommunityPage: React.FC = () => {
                       <div className="flex items-center gap-2 pt-2">
                         <input
                           type="text"
-                          placeholder={isAuthenticated ? "Góp ý hoặc hỏi bí quyết nấu nướng..." : "Đăng nhập để tham gia thảo luận..."}
-                          disabled={!isAuthenticated}
+                          placeholder={isAuthenticated ? "Góp ý hoặc hỏi bí quyết nấu nướng..." : "Bấm vào đây để đăng nhập và bình luận..."}
+                          readOnly={!isAuthenticated}
+                          onClick={() => {
+                            if (!isAuthenticated) {
+                              setShowAuthModal(true);
+                            }
+                          }}
                           value={commentInputs[post._id] || ''}
                           onChange={(e) => setCommentInputs({ ...commentInputs, [post._id]: e.target.value })}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') handleSendComment(post._id);
                           }}
-                          className="flex-1 bg-white rounded-2xl px-4 py-2.5 text-xs sm:text-sm border border-orange-200/80 focus:outline-none focus:ring-2 focus:ring-orange-500/20 placeholder-slate-400 shadow-inner"
+                          className="flex-1 bg-white rounded-2xl px-4 py-2.5 text-xs sm:text-sm border border-orange-200/80 focus:outline-none focus:ring-2 focus:ring-orange-500/20 placeholder-slate-400 shadow-inner cursor-pointer"
                         />
                         <button
                           onClick={() => handleSendComment(post._id)}
-                          disabled={!isAuthenticated || !commentInputs[post._id]?.trim()}
+                          disabled={isAuthenticated && !commentInputs[post._id]?.trim()}
                           className="px-4 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-orange-500/25 active:scale-95"
                         >
                           <Send className="w-3.5 h-3.5" />
@@ -1356,6 +1392,14 @@ export const CommunityPage: React.FC = () => {
         )}
 
       </div>
+
+      {/* Modal yêu cầu đăng nhập khi khách tương tác trong cộng đồng */}
+      <AuthRequiredModal
+        isOpen={showAuthModal && !isAuthenticated}
+        onClose={() => setShowAuthModal(false)}
+        featureType="community"
+        redirectPath="/community"
+      />
     </div>
   );
 };

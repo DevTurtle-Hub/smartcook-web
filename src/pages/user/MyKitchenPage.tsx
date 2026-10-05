@@ -25,9 +25,12 @@ import { UserHeader } from '../../components/user/UserHeader';
 import { richFallbackRecipes, type ExtendedRecipe } from '../public/RecipeListPage';
 import { NearbySupermarketsModal } from '../../components/supermarket/NearbySupermarketsModal';
 import { useCartStore } from '../../store/useCartStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { fridgeApi, type FridgeItemDTO } from '../../api/fridge.api';
 import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
 import { toast } from '../../context/ToastContext';
+import { AuthRequiredModal } from '../../components/common/AuthRequiredModal';
+import { PreviewModeBanner } from '../../components/common/PreviewModeBanner';
 
 // Danh sách các danh mục nguyên liệu thông dụng trong căn bếp Việt
 const INGREDIENT_CATEGORIES = [
@@ -76,9 +79,12 @@ export const MyKitchenPage: React.FC = () => {
   const [modalMissingIngredients, setModalMissingIngredients] = useState<{ name: string }[]>([]);
 
   const { addItem, openCart } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(!isAuthenticated);
 
-  // Nạp dữ liệu tủ lạnh từ Backend MongoDB
+  // Nạp dữ liệu tủ lạnh từ Backend MongoDB (nếu đã đăng nhập)
   useEffect(() => {
+    if (!isAuthenticated) return;
     let isMounted = true;
     const fetchFridge = async () => {
       try {
@@ -95,7 +101,7 @@ export const MyKitchenPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // Chuẩn hóa chuỗi nguyên liệu
   const normalize = (str: string) =>
@@ -104,6 +110,10 @@ export const MyKitchenPage: React.FC = () => {
   // Thêm nguyên liệu từ input
   const handleAddCustom = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     const trimmed = customInput.trim();
     if (!trimmed) return;
     if (!selectedIngredients.some((ing) => normalize(ing) === normalize(trimmed))) {
@@ -124,6 +134,10 @@ export const MyKitchenPage: React.FC = () => {
 
   // Toggle chọn nguyên liệu
   const toggleIngredient = async (name: string) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     if (selectedIngredients.some((ing) => normalize(ing) === normalize(name))) {
       setSelectedIngredients((prev) => prev.filter((ing) => normalize(ing) !== normalize(name)));
       toast.info(`Đã gỡ "${name}" khỏi tủ lạnh.`);
@@ -151,6 +165,10 @@ export const MyKitchenPage: React.FC = () => {
 
   // Xóa toàn bộ
   const handleClearAll = async () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     if (selectedIngredients.length === 0) return;
     setSelectedIngredients([]);
     setFridgeItems([]);
@@ -232,6 +250,10 @@ export const MyKitchenPage: React.FC = () => {
 
   // Thêm các nguyên liệu thiếu vào giỏ đi chợ
   const handleAddMissingToCart = (recipe: ExtendedRecipe, missing: string[]) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     missing.forEach((item) => {
       addItem({
         recipeId: recipe._id,
@@ -255,6 +277,10 @@ export const MyKitchenPage: React.FC = () => {
 
   // Mở modal siêu thị với các nguyên liệu thiếu
   const handleFindSupermarket = (missing: string[]) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     setModalMissingIngredients(missing.map((m) => ({ name: m.charAt(0).toUpperCase() + m.slice(1) })));
     setIsSupermarketModalOpen(true);
   };
@@ -265,6 +291,13 @@ export const MyKitchenPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#faf8f5] text-slate-900 font-sans selection:bg-orange-500 selection:text-white pb-24">
       <UserHeader />
+
+      {/* Banner xem trước nếu chưa đăng nhập */}
+      <PreviewModeBanner
+        featureName="Tủ Lạnh Thông Minh"
+        onOpenAuthModal={() => setShowAuthModal(true)}
+        redirectPath="/my-kitchen"
+      />
 
       {/* AMBIENT BACKGROUND GLOW */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -375,12 +408,24 @@ export const MyKitchenPage: React.FC = () => {
                   type="text"
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  placeholder="Nhập tên nguyên liệu (vd: thịt bò, nấm, ớt chuông...)"
-                  className="w-full pl-4 pr-12 py-3 rounded-2xl bg-slate-50 border border-slate-200/90 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all shadow-inner"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      setShowAuthModal(true);
+                    }
+                  }}
+                  readOnly={!isAuthenticated}
+                  placeholder={isAuthenticated ? "Nhập tên nguyên liệu (vd: thịt bò, nấm, ớt chuông...)" : "Đăng nhập để thêm nguyên liệu vào tủ lạnh..."}
+                  className="w-full pl-4 pr-12 py-3 rounded-2xl bg-slate-50 border border-slate-200/90 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all shadow-inner cursor-pointer"
                 />
                 <button
                   type="submit"
-                  disabled={!customInput.trim()}
+                  onClick={(e) => {
+                    if (!isAuthenticated) {
+                      e.preventDefault();
+                      setShowAuthModal(true);
+                    }
+                  }}
+                  disabled={isAuthenticated && !customInput.trim()}
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-xs active:scale-95"
                   title="Thêm nguyên liệu"
                 >
@@ -688,6 +733,14 @@ export const MyKitchenPage: React.FC = () => {
         isOpen={isSupermarketModalOpen}
         onClose={() => setIsSupermarketModalOpen(false)}
         neededIngredients={modalMissingIngredients}
+      />
+
+      {/* Modal yêu cầu đăng nhập khi khách thao tác tính năng tủ lạnh */}
+      <AuthRequiredModal
+        isOpen={showAuthModal && !isAuthenticated}
+        onClose={() => setShowAuthModal(false)}
+        featureType="fridge"
+        redirectPath="/my-kitchen"
       />
     </div>
   );
