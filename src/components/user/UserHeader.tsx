@@ -226,7 +226,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 }`}
               >
                 <Utensils className="w-4 h-4" />
-                <span>Nguyên Liệu</span>
+                <span>Kho Món Ăn</span>
                 {location.pathname.startsWith('/recipes') && (
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
                 )}
@@ -239,20 +239,39 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 }`}
               >
                 <Refrigerator className="w-4 h-4 text-orange-500" />
-                <span>Bếp Của Tôi</span>
+                <span>Tủ Lạnh Thông Minh</span>
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                 {location.pathname === '/my-kitchen' && (
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
                 )}
               </Link>
 
-              <div className="hidden xl:flex items-center gap-5 text-xs text-slate-500 font-semibold whitespace-nowrap">
-                <a href="/#module-fridge" className="hover:text-orange-600 transition-colors">Tủ Lạnh Thông Minh</a>
-                <a href="/#module-ai-scan" className="hover:text-orange-600 transition-colors flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-                  <span>AI Camera</span>
-                </a>
-              </div>
+              <Link 
+                to="/scan" 
+                className={`group relative flex items-center gap-2 py-7 text-sm font-bold tracking-tight transition-colors ${
+                  location.pathname === '/scan' ? 'text-orange-600' : 'text-slate-600 hover:text-orange-500'
+                }`}
+              >
+                <Camera className="w-4 h-4 text-orange-500" />
+                <span>AI Camera</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                {location.pathname === '/scan' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
+                )}
+              </Link>
+
+              <Link 
+                to="/community" 
+                className={`group relative flex items-center gap-2 py-7 text-sm font-bold tracking-tight transition-colors ${
+                  location.pathname === '/community' ? 'text-orange-600' : 'text-slate-600 hover:text-orange-500'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4 text-orange-500" />
+                <span>Cộng Đồng</span>
+                {location.pathname === '/community' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-[0_2px_10px_rgba(234,88,12,0.6)]" />
+                )}
+              </Link>
             </div>
           )}
         </nav>
@@ -485,7 +504,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                   }`}
                 >
                   <Utensils className="w-4 h-4" />
-                  <span>Nguyên Liệu</span>
+                  <span>Kho Món Ăn</span>
                 </Link>
 
                 <Link
@@ -497,9 +516,34 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 >
                   <div className="flex items-center gap-3">
                     <Refrigerator className="w-4 h-4" />
-                    <span>Bếp Của Tôi</span>
+                    <span>Tủ Lạnh Thông Minh</span>
                   </div>
                   <Sparkles className="w-4 h-4 text-amber-500" />
+                </Link>
+
+                <Link
+                  to="/scan"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold ${
+                    location.pathname === '/scan' ? 'bg-orange-500 text-white' : 'text-slate-800 hover:bg-orange-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Camera className="w-4 h-4" />
+                    <span>AI Camera Scan</span>
+                  </div>
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                </Link>
+
+                <Link
+                  to="/community"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold ${
+                    location.pathname === '/community' ? 'bg-orange-500 text-white' : 'text-slate-800 hover:bg-orange-50'
+                  }`}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Cộng Đồng Ẩm Thực</span>
                 </Link>
               </div>
             )}
