@@ -282,8 +282,12 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
           {/* NÚT TIN NHẮN BẾP (CULINARY CHAT LOUNGE) */}
           <button
             onClick={toggleChat}
-            className="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white hover:bg-orange-50/80 border border-slate-200/90 hover:border-orange-300 transition-all duration-200 shadow-2xs hover:shadow-xs group"
-            title="Mở phòng chat giao lưu ẩm thực"
+            className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs group cursor-pointer ${
+              isAuthenticated
+                ? 'bg-white hover:bg-orange-50/80 border border-slate-200/90 hover:border-orange-300'
+                : 'bg-gradient-to-r from-orange-50/90 via-amber-50/80 to-white hover:from-orange-100/90 hover:to-amber-100/90 border border-orange-200/90 hover:border-orange-300 text-slate-800 hover:scale-[1.02] active:scale-95'
+            }`}
+            title={isAuthenticated ? "Mở phòng chat giao lưu ẩm thực" : "Giao lưu bếp & Nhắn tin đầu bếp (Yêu cầu đăng nhập)"}
           >
             <div className="relative">
               <MessageCircle className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
@@ -293,10 +297,21 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                   <span className="relative z-10">{totalUnreadChats}</span>
                 </span>
               )}
+              {!isAuthenticated && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                </span>
+              )}
             </div>
             <span className="hidden sm:inline font-bold text-xs text-slate-800 group-hover:text-orange-600 transition-colors">
               Nhắn tin
             </span>
+            {!isAuthenticated && (
+              <span className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[9px] font-extrabold tracking-tight">
+                Live
+              </span>
+            )}
           </button>
 
           {/* NÚT GIỎ HÀNG ĐI CHỢ (NỔI BẬT Ở HEADER) */}
