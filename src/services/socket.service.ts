@@ -18,6 +18,7 @@ class SocketService {
   private postReactionListeners = new Set<(data: { postId: string; totalReactions: number; reactionCounts: Record<string, number>; userId: string; reactionType: string | null }) => void>();
   private postCommentListeners = new Set<(data: { postId: string; comment: any; commentsCount: number }) => void>();
   private postDeletedListeners = new Set<(data: { postId: string }) => void>();
+  private cartUpdatedListeners = new Set<(data: any) => void>();
 
   /**
    * Connect to WebSocket server with JWT authentication (or as guest)
@@ -127,6 +128,16 @@ class SocketService {
           fn(data);
         } catch (e) {
           console.error('Error in post_deleted listener:', e);
+        }
+      });
+    });
+
+    this.socket.on('cart_updated', (data: any) => {
+      this.cartUpdatedListeners.forEach((fn) => {
+        try {
+          fn(data);
+        } catch (e) {
+          console.error('Error in cart_updated listener:', e);
         }
       });
     });
@@ -331,6 +342,15 @@ class SocketService {
 
   public offPostDeleted(callback: (data: any) => void) {
     this.postDeletedListeners.delete(callback);
+  }
+
+  public onCartUpdated(callback: (data: any) => void) {
+    this.cartUpdatedListeners.add(callback);
+    this.connect();
+  }
+
+  public offCartUpdated(callback: (data: any) => void) {
+    this.cartUpdatedListeners.delete(callback);
   }
 }
 
