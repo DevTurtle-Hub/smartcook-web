@@ -1,4 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { CookingStepTimers } from '../../components/ai/CookingStepTimers';
+import { CookingVoiceAssistant } from '../../components/ai/CookingVoiceAssistant';
+import { useCookingSession } from '../../hooks/useCookingSession';
+import { normalizeCookingNutrition } from '../../utils/cookingScope';
+import { cookingStepSeconds } from '../../utils/cookingTimer';
+import type { CookingVoiceReply } from '../../api/cookingVoice.api';
 import { useParams, Link } from 'react-router-dom';
 import {
   Clock,
@@ -7,13 +13,9 @@ import {
   Heart,
   Share2,
   ArrowLeft,
-  Play,
-  Pause,
-  RotateCcw,
   Sparkles,
   Utensils,
   ChevronRight,
-  Timer,
   Check,
   Plus,
   ShoppingCart,
@@ -86,31 +88,8 @@ export const RecipeDetailPage: React.FC = () => {
   const { addItem, openCart } = useCartStore();
   const { updateUser } = useAuthStore();
 
-  // Timer State
-  const [timerSeconds, setTimerSeconds] = useState(300);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [isCookingMode, setIsCookingMode] = useState(false);
-  
   const cookingStepsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let interval: any = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0) {
-      setIsTimerRunning(false);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
-
-  const formatTimer = (sec: number) => {
-    const mins = Math.floor(sec / 60);
-    const remainingSec = sec % 60;
-    return `${mins.toString().padStart(2, '0')}:${remainingSec.toString().padStart(2, '0')}`;
-  };
 
   const { data: recipeData } = useQuery({
     queryKey: ['recipe', id],
@@ -174,6 +153,9 @@ export const RecipeDetailPage: React.FC = () => {
 
   const rawRecipe = (recipeData as any) || fallbackMatch || defaultRecipe;
 
+  const cookingNutrition = recipeData || fallbackMatch || id === 'seed-chicken-rice'
+    ? normalizeCookingNutrition(rawRecipe.nutrition, rawRecipe.calories) : undefined;
+
   const recipe: ExtendedRecipe = {
     ...defaultRecipe,
     ...rawRecipe,
@@ -219,6 +201,45 @@ export const RecipeDetailPage: React.FC = () => {
     timerMinutes: step?.timerMinutes || 0,
     tip: step?.tip || '',
   }));
+
+  const { timer, send: sendTimer } = useCookingSession(
+    displaySteps.map((step) => cookingStepSeconds(Number(step.timerMinutes))), recipe._id,
+  );
+  const activeStepIndex = timer.stepIndex;
+  const timerSeconds = timer.remainingSeconds;
+  const isTimerRunning = timer.status === 'running';
+  const currentCookingStep = displaySteps[activeStepIndex] || displaySteps[0];
+  const selectCookingStep = (index: number, completeCurrent = false) => {
+    if (index < 0 || index >= displaySteps.length) return;
+    setIsCookingMode(true);
+    sendTimer({ type: 'navigate', index, fromIndex: activeStepIndex, completeCurrent });
+  };
+  const confirmCookingStep = () => {
+    if (activeStepIndex === displaySteps.length - 1) {
+      sendTimer({ type: 'confirm' });
+      toast.info('Đã xong bước cuối. Bấm “Đã Nấu Xong” để lưu lịch sử món ăn.');
+    } else if (timer.autoEnabled && timer.status !== 'confirmed') {
+      sendTimer({ type: 'confirm' });
+    } else {
+      selectCookingStep(activeStepIndex + 1, true);
+    }
+  };
+  const handleVoiceAction = (answer: CookingVoiceReply) => {
+    const payload = answer.actionPayload;
+    if (answer.action === 'GO_TO_STEP') {
+      const index = displaySteps.findIndex((step) => step.stepNumber === payload?.targetStep);
+      if (index >= 0) selectCookingStep(index);
+    } else if (answer.action === 'NEXT_STEP') selectCookingStep(activeStepIndex + 1, true);
+    else if (answer.action === 'PREV_STEP') selectCookingStep(activeStepIndex - 1);
+    else if (answer.action === 'EXTEND_TIMER' && payload?.extendSeconds && Number.isFinite(payload.extendSeconds) && payload.extendSeconds > 0) {
+      sendTimer({ type: 'adjust', seconds: payload.extendSeconds, resume: true });
+    } else if (answer.action === 'REDUCE_TIMER' && payload?.reduceSeconds && Number.isFinite(payload.reduceSeconds) && payload.reduceSeconds > 0) {
+      sendTimer({ type: 'adjust', seconds: -payload.reduceSeconds });
+    }
+  };
+  useEffect(() => {
+    if (timer.status === 'expired') toast.info('Đã hết thời gian dự kiến. Kiểm tra món ăn, gia hạn hoặc xác nhận đã xong bước.');
+  }, [timer.status]);
 
   // Tính tổng chi phí ban đầu và chi phí còn lại sau khi tick bỏ những thứ đã có sẵn
   const totalOriginalCost = displayIngredients.reduce((sum, ing) => sum + ing.price, 0);
@@ -332,11 +353,9 @@ export const RecipeDetailPage: React.FC = () => {
 
   const handleStartCooking = () => {
     setIsCookingMode(true);
-    if (displaySteps[0]?.timerMinutes) {
-      setTimerSeconds(displaySteps[0].timerMinutes * 60);
-      setIsTimerRunning(true);
-    }
-    setActiveStepIndex(0);
+    sendTimer({ type: 'navigate', index: 0, fromIndex: activeStepIndex });
+    sendTimer({ type: 'reset' });
+    sendTimer({ type: 'toggle' });
     cookingStepsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -463,7 +482,7 @@ export const RecipeDetailPage: React.FC = () => {
             <div className="w-full max-w-[320px] flex items-center justify-between pt-4 px-2 text-xs text-slate-500 font-medium">
               <span className="flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-orange-500" />
-                <strong className="text-slate-800">{recipe.nutrition.calories}</strong> kcal
+                <strong className="text-slate-800">{cookingNutrition?.calories ?? "—"}</strong> kcal
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -508,19 +527,19 @@ export const RecipeDetailPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-4 sm:gap-8 pt-2 text-xs">
                 <div>
                   <span className="text-slate-400 block text-[11px]">Đạm (Protein)</span>
-                  <span className="font-bold text-slate-800 text-sm">{recipe.nutrition.proteinGrams}g</span>
+                  <span className="font-bold text-slate-800 text-sm">{cookingNutrition?.proteinGrams ?? "—"}g</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[11px]">Tinh bột (Carbs)</span>
-                  <span className="font-bold text-slate-800 text-sm">{recipe.nutrition.carbsGrams}g</span>
+                  <span className="font-bold text-slate-800 text-sm">{cookingNutrition?.carbsGrams ?? "—"}g</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[11px]">Chất béo (Fat)</span>
-                  <span className="font-bold text-slate-800 text-sm">{recipe.nutrition.fatGrams}g</span>
+                  <span className="font-bold text-slate-800 text-sm">{cookingNutrition?.fatGrams ?? "—"}g</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[11px]">Năng lượng</span>
-                  <span className="font-bold text-orange-600 text-sm">{recipe.nutrition.calories} kcal</span>
+                  <span className="font-bold text-orange-600 text-sm">{cookingNutrition?.calories ?? "—"} kcal</span>
                 </div>
               </div>
             </div>
@@ -682,24 +701,13 @@ export const RecipeDetailPage: React.FC = () => {
                   Các Bước Nấu ({displaySteps.length} bước)
                 </h3>
 
-                {/* Mini Timer Gọn Gàng */}
-                <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-mono">
-                  <Timer className="w-3.5 h-3.5 text-orange-400" />
-                  <span className="font-bold text-orange-400">{formatTimer(timerSeconds)}</span>
-                  <button
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    className="p-1 rounded bg-orange-500 hover:bg-orange-600 text-white"
-                  >
-                    {isTimerRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                  </button>
-                  <button
-                    onClick={() => { setIsTimerRunning(false); setTimerSeconds(300); }}
-                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                  </button>
-                </div>
               </div>
+
+              <CookingStepTimers timer={timer} stepNumber={currentCookingStep.stepNumber}
+                nextStepNumber={displaySteps[activeStepIndex + 1]?.stepNumber}
+                onAction={sendTimer} onConfirm={confirmCookingStep}
+                onNext={() => selectCookingStep(activeStepIndex + 1, true)}
+                onPrevious={() => selectCookingStep(activeStepIndex - 1)} />
 
               {/* Timeline Các Bước Nấu */}
               <div className="space-y-3">
@@ -708,7 +716,11 @@ export const RecipeDetailPage: React.FC = () => {
                   return (
                     <div
                       key={step.stepNumber}
-                      onClick={() => setActiveStepIndex(idx)}
+                      onClick={() => selectCookingStep(idx)}
+                      role="button" tabIndex={0}
+                      aria-label={`Chọn bước ${step.stepNumber}`}
+                      aria-current={isActive ? 'step' : undefined}
+                      onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectCookingStep(idx); } }}
                       className={`p-3.5 sm:p-4 rounded-2xl transition-all flex items-start gap-3.5 ${
                         isActive
                           ? 'bg-orange-100/60 border border-orange-300 shadow-xs'
@@ -718,7 +730,7 @@ export const RecipeDetailPage: React.FC = () => {
                       <span className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
                         isActive ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {step.stepNumber}
+                        {timer.completedSteps[idx] ? <Check size={14} aria-label={`Đã xong bước ${step.stepNumber}`} /> : step.stepNumber}
                       </span>
 
                       <div className="flex-1 space-y-1.5">
@@ -730,9 +742,9 @@ export const RecipeDetailPage: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setTimerSeconds(step.timerMinutes! * 60);
-                              setIsTimerRunning(true);
-                              setActiveStepIndex(idx);
+                              selectCookingStep(idx);
+                              sendTimer({ type: 'reset' });
+                              sendTimer({ type: 'toggle' });
                             }}
                             className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md hover:bg-orange-100 transition-colors"
                           >
@@ -746,6 +758,24 @@ export const RecipeDetailPage: React.FC = () => {
                 })}
               </div>
             </div>
+
+            <CookingVoiceAssistant key={recipe._id} recipeId={recipe._id} onAction={handleVoiceAction}
+              onInteraction={() => sendTimer({ type: 'pauseGrace' })} context={{
+              recipeTitle: recipe.title.slice(0, 160),
+              currentStep: { stepNumber: currentCookingStep.stepNumber, title: currentCookingStep.title.slice(0, 160), description: currentCookingStep.instruction.slice(0, 1600) },
+              stepTimer: {
+                targetMinutes: timer.initialSeconds / 60,
+                elapsedSeconds: Math.max(0, timer.initialSeconds - timerSeconds),
+                remainingSeconds: timerSeconds, isRunning: isTimerRunning,
+                isOverdue: timer.status === 'expired', overdueSeconds: 0,
+              },
+              recipeContext: {
+                servings: String(recipe.servingsCount || '').slice(0, 80),
+                nutrition: cookingNutrition,
+                ingredients: displayIngredients.slice(0, 40).map((item) => ({ name: String(item.name).slice(0, 120), amount: `${item.amount} ${item.unit}`.trim().slice(0, 100) })),
+                steps: displaySteps.slice(0, 30).map((step) => ({ stepNumber: step.stepNumber, title: step.title.slice(0, 160), description: step.instruction.slice(0, 1600), timerMinutes: Number(step.timerMinutes) || 0 })),
+              },
+            }} />
 
             {/* 4. CÁC NÚT ĐIỀU KHIỂN NẤU VÀ HOÀN THÀNH (+50 XP) */}
             <div className="pt-3 flex flex-wrap items-center gap-3">
