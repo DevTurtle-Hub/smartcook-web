@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, BASE_URL } from './client';
 import type { ApiResponse, AuthResponse, User } from '../types';
 
 
@@ -48,7 +48,7 @@ export const authApi = {
         const errorMsg = err.response.data?.message || err.response.data?.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
         throw new Error(errorMsg);
       }
-      throw new Error('Không thể kết nối đến máy chủ Backend (http://localhost:5000). Vui lòng kiểm tra và khởi động Backend.');
+      throw new Error(`Không thể kết nối đến máy chủ Backend (${BASE_URL}). Vui lòng kiểm tra và khởi động Backend.`);
     }
   },
 
@@ -61,7 +61,7 @@ export const authApi = {
         const errorMsg = err.response.data?.message || err.response.data?.error || 'Đăng nhập Google thất bại.';
         throw new Error(errorMsg);
       }
-      throw new Error('Không thể kết nối đến máy chủ Backend (http://localhost:5000). Vui lòng kiểm tra và khởi động Backend.');
+      throw new Error(`Không thể kết nối đến máy chủ Backend (${BASE_URL}). Vui lòng kiểm tra và khởi động Backend.`);
     }
   },
 
@@ -74,7 +74,7 @@ export const authApi = {
         const errorMsg = err.response.data?.message || err.response.data?.error || 'Đăng ký tài khoản không thành công.';
         throw new Error(errorMsg);
       }
-      throw new Error('Không thể kết nối đến máy chủ Backend (http://localhost:5000). Vui lòng kiểm tra và khởi động Backend.');
+      throw new Error(`Không thể kết nối đến máy chủ Backend (${BASE_URL}). Vui lòng kiểm tra và khởi động Backend.`);
     }
   },
 
