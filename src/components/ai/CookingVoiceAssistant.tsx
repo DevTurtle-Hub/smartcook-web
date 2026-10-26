@@ -1,0 +1,88 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import { ChevronDown, Mic, Send, Square, Volume2, VolumeX, X, LoaderCircle } from 'lucide-react';
+import { useCookingVoice } from '../../hooks/useCookingVoice';
+import type { CookingVoiceReply, CookingVoiceRequest } from '../../api/cookingVoice.api';
+
+interface Props {
+  recipeId: string;
+  context: Omit<CookingVoiceRequest, 'userVoiceText' | 'conversationHistory'>;
+  onAction: (reply: CookingVoiceReply) => void;
+  onInteraction?: () => void;
+}
+
+export function CookingVoiceAssistant({ recipeId, context, onAction, onInteraction }: Props) {
+  const voice = useCookingVoice(context, recipeId, onAction);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [expanded, setExpanded] = useState(true);
+  const [draft, setDraft] = useState('');
+  const busy = voice.phase !== 'idle';
+  const status = voice.phase === 'permission' ? 'Đang chờ quyền micro…'
+    : voice.phase === 'recording' ? 'Đang nghe… Tự gửi khi bạn ngừng nói, hoặc bấm “Dừng và gửi” (tối đa 15 giây).'
+    : voice.phase === 'transcribing' ? 'Đang nhận diện lời nói…'
+    : voice.phase === 'thinking' ? 'Đang xử lý câu hỏi…'
+    : voice.isSpeaking ? 'Đang đọc câu trả lời…' : 'Nói hoặc nhập để hỏi về món đang nấu';
+
+  return (
+    <section aria-label="Trợ lý giọng nói nấu ăn" onFocusCapture={onInteraction} onPointerDownCapture={onInteraction} className="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden">
+      <button type="button" aria-expanded={expanded} onClick={() => {
+        if (expanded) voice.cancel();
+        setExpanded(!expanded);
+      }} className="flex w-full items-center justify-between gap-3 bg-emerald-50 p-4 text-left">
+        <span className="flex items-center gap-3">
+          <span className="rounded-xl bg-emerald-600 p-2 text-white"><Mic size={20} /></span>
+          <span><span className="block font-extrabold text-emerald-900">Trợ lý giọng nói nấu ăn</span>
+            <span className="block text-xs text-emerald-700">Bước {context.currentStep.stepNumber} · {context.recipeTitle}</span></span>
+        </span>
+        <ChevronDown size={18} className={expanded ? 'rotate-180 shrink-0' : 'shrink-0'} />
+      </button>
+      {expanded && <div className="space-y-4 p-4 sm:p-5">
+        {!isAuthenticated && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><Link to="/auth/login" className="font-bold underline">Đăng nhập</Link> để nói bằng micro và hỏi AI. Bạn vẫn có thể nhập lệnh chuyển bước, hẹn giờ hoặc hỏi định lượng có trong công thức.</p>}
+        <p className="text-xs text-slate-500">Hỏi nguyên liệu, cách nấu, hoặc nói “Chuyển sang bước hai”, “Lùi bước”, “Thêm hai phút”, “Trừ hai phút”. Lệnh thời gian chỉnh hẹn giờ nấu của bước đang chọn.</p>
+        {(voice.transcript || voice.reply) && <div role="log" aria-live="polite" className="max-h-72 overflow-y-auto space-y-3 rounded-xl bg-slate-50 p-4 text-sm leading-relaxed">
+          {voice.transcript && <div><p className="text-xs font-bold text-slate-500">BẠN</p><p className="whitespace-pre-wrap break-words">{voice.transcript}</p></div>}
+          {voice.reply && <div><p className="text-xs font-bold text-emerald-700">BẾP TRƯỞNG AI</p><p className="whitespace-pre-wrap break-words text-emerald-900">{voice.reply}</p></div>}
+        </div>}
+        {voice.error && <p role="alert" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{voice.error}</p>}
+        <div className="flex flex-wrap gap-2">
+          {voice.quickReplies.map((text) => <button key={text} type="button" disabled={busy} onClick={() => void voice.send(text)}
+            className="rounded-full border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50">{text}</button>)}
+        </div>
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          if (busy || !draft.trim()) return;
+          void voice.send(draft);
+          setDraft('');
+        }} className="flex items-end gap-2">
+          <div className="flex-1">
+            <label htmlFor="cooking-voice-question" className="sr-only">Câu hỏi về món đang nấu</label>
+            <textarea id="cooking-voice-question" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={600} rows={2}
+              placeholder="Hoặc nhập câu hỏi cho AI…" disabled={busy}
+              className="w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50" />
+          </div>
+          <button type="submit" disabled={busy || !draft.trim()} className="mb-1 flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"><Send size={16} /> Gửi</button>
+        </form>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button type="button" disabled={!isAuthenticated || (busy && voice.phase !== 'recording')} onClick={() => {
+            if (voice.phase === 'recording') voice.stopRecording(); else void voice.startRecording();
+          }} className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white disabled:opacity-50 ${voice.phase === 'recording' ? 'bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+            {voice.phase === 'recording' ? <Square size={18} /> : busy ? <LoaderCircle size={18} className="animate-spin" /> : <Mic size={18} />}
+            {voice.phase === 'recording' ? 'Dừng và gửi' : 'Chạm để nói'}
+          </button>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+            {busy && <button type="button" onClick={voice.cancel} className="flex items-center gap-1"><X size={16} /> Hủy</button>}
+            <button type="button" disabled={busy || !voice.reply} onClick={() => voice.isSpeaking ? voice.stopSpeech() : voice.speak(voice.reply)} className="flex items-center gap-1 disabled:opacity-40">
+              {voice.isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}{voice.isSpeaking ? 'Dừng đọc' : 'Nghe lại'}
+            </button>
+            <label className="flex items-center gap-1.5"><input type="checkbox" checked={voice.readReplies} onChange={(event) => {
+              voice.setReadReplies(event.target.checked);
+              if (!event.target.checked) voice.stopSpeech();
+            }} />Đọc câu trả lời</label>
+          </div>
+        </div>
+        <p role="status" className="text-xs text-slate-500">{status}</p>
+      </div>}
+    </section>
+  );
+}

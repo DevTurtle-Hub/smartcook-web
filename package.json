@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:cooking-voice": "node scripts/testCookingVoice.mjs",
     "preview": "vite preview",
     "test:integration": "node scripts/testPhase1Integration.mjs",
     "test:chat": "node scripts/testRealtimeChat.mjs",
