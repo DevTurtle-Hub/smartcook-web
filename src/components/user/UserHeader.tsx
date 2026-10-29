@@ -28,6 +28,7 @@ import { useCartStore } from '../../store/useCartStore';
 import { useChatStore } from '../../store/useChatStore';
 import { GroceryCartDrawer } from './GroceryCartDrawer';
 import { CulinaryChatModal } from '../chat/CulinaryChatModal';
+import { getUserAvatarUrl } from '../../utils/avatar';
 
 interface UserHeaderProps {
   isLandingPage?: boolean;
@@ -361,13 +362,16 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}
                 className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-white hover:bg-orange-50/40 border border-slate-200/90 hover:border-orange-300 shadow-2xs hover:shadow-xs transition-all group"
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   <img
-                    src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                    src={getUserAvatarUrl(user)}
                     alt={user.fullName || user.firstName}
-                    className="w-8 h-8 rounded-xl object-cover border border-orange-300 group-hover:scale-105 transition-transform"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/facebook-default-avatar.svg';
+                    }}
+                    className="w-8 h-8 rounded-full object-cover border border-orange-300 group-hover:scale-105 transition-transform bg-[#E4E6EB]"
                   />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white shadow-2xs" />
                 </div>
 
                 <div className="hidden md:flex flex-col text-left">
