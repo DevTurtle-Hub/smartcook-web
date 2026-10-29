@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChefHat, Smartphone, LogOut, ShieldCheck, Heart, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { getUserAvatarUrl } from '../utils/avatar';
 
 export const PublicLayout: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuthStore();
@@ -74,9 +75,12 @@ export const PublicLayout: React.FC = () => {
                   className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
                 >
                   <img
-                    src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                    src={getUserAvatarUrl(user)}
                     alt={user.fullName || user.firstName}
-                    className="w-8 h-8 rounded-full object-cover border border-orange-200"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/facebook-default-avatar.svg';
+                    }}
+                    className="w-8 h-8 rounded-full object-cover border border-orange-200 bg-[#E4E6EB]"
                   />
                   <span className="hidden sm:inline text-sm font-medium text-slate-700">
                     {user.firstName || 'Bếp trưởng'}

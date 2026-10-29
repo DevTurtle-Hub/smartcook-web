@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { UserHeader } from '../../components/user/UserHeader';
+import { getUserAvatarUrl } from '../../utils/avatar';
 import { authApi } from '../../api/auth.api';
 import { cookingHistoryApi, type CookingRecordDTO } from '../../api/cookingHistory.api';
 
@@ -351,9 +352,12 @@ export const ProfilePage: React.FC = () => {
             <div className="relative group shrink-0">
               <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-4 border-white shadow-xl shadow-orange-500/10 bg-orange-50">
                 <img
-                  src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&auto=format&fit=crop&q=80'}
+                  src={getUserAvatarUrl(user)}
                   alt="Chef Avatar"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/facebook-default-avatar.svg';
+                  }}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 bg-[#E4E6EB]"
                 />
               </div>
 
@@ -771,9 +775,12 @@ export const ProfilePage: React.FC = () => {
                   {/* Current Preview */}
                   <div className="relative shrink-0">
                     <img
-                      src={avatarPreview || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'}
+                      src={avatarPreview || (user ? getUserAvatarUrl(user) : '/facebook-default-avatar.svg')}
                       alt="Avatar Preview"
-                      className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md bg-white"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/facebook-default-avatar.svg';
+                      }}
+                      className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md bg-[#E4E6EB]"
                     />
                     <button
                       type="button"

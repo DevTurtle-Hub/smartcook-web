@@ -20,6 +20,9 @@ const getStoredAuth = () => {
     const token = localStorage.getItem('smartcook_token');
     const refresh = localStorage.getItem('smartcook_refresh_token');
     const user = userStr ? JSON.parse(userStr) : null;
+    if (user && user.avatar && user.avatar.includes('unsplash.com')) {
+      user.avatar = '';
+    }
     return {
       user,
       accessToken: token,

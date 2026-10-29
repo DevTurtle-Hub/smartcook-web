@@ -330,18 +330,18 @@ export const MyKitchenPage: React.FC = () => {
               </p>
 
               {/* Chỉ số nhanh nổi bật */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs sm:text-sm font-bold text-slate-600">
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-emerald-200 shadow-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span>Nấu được ngay: <strong className="text-emerald-700 font-black">{readyCount}</strong> món</span>
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs sm:text-sm font-semibold text-slate-600">
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  <span>Nấu được ngay: <strong className="text-slate-900 font-bold">{readyCount}</strong> món</span>
                 </div>
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-amber-200 shadow-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                  <span>Chỉ thiếu 1-2 món: <strong className="text-amber-700 font-black">{missingFewCount}</strong> món</span>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-slate-400" />
+                  <span>Chỉ thiếu 1-2 món: <strong className="text-slate-900 font-bold">{missingFewCount}</strong> món</span>
                 </div>
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-orange-200 shadow-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
-                  <span>Đã chọn: <strong className="text-orange-600 font-black">{selectedIngredients.length}</strong> nguyên liệu</span>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  <span>Đã chọn: <strong className="text-orange-600 font-bold">{selectedIngredients.length}</strong> nguyên liệu</span>
                 </div>
               </div>
             </div>
@@ -512,15 +512,15 @@ export const MyKitchenPage: React.FC = () => {
           <div className="lg:col-span-7 space-y-4">
             
             {/* Thanh Tab Chuyển Đổi & Lọc */}
-            <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-orange-200/80 p-2 sm:p-2.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="bg-white rounded-2xl border border-slate-200 p-1.5 sm:p-2 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-1.5 overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setFilterTab('all')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                     filterTab === 'all'
-                      ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
-                      : 'text-slate-600 hover:bg-orange-50'
+                      ? 'bg-orange-500 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   Tất cả gợi ý ({matchedRecipes.length})
@@ -529,10 +529,10 @@ export const MyKitchenPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFilterTab('ready')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
                     filterTab === 'ready'
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                      : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                      ? 'bg-orange-500 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -542,10 +542,10 @@ export const MyKitchenPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFilterTab('missing1_2')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
                     filterTab === 'missing1_2'
-                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
-                      : 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                      ? 'bg-orange-500 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   <AlertCircle className="w-3.5 h-3.5" />
@@ -553,8 +553,8 @@ export const MyKitchenPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="text-xs text-slate-500 font-semibold px-2">
-                Sắp xếp theo <span className="text-orange-600 font-bold">% Khớp</span>
+              <div className="text-xs text-slate-500 font-medium px-2">
+                Sắp xếp theo <span className="text-slate-900 font-bold">% Khớp</span>
               </div>
             </div>
 
@@ -564,12 +564,8 @@ export const MyKitchenPage: React.FC = () => {
                 return (
                   <div
                     key={recipe._id}
-                    className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden shadow-2xs hover:shadow-md ${
-                      isReadyToCook
-                        ? 'border-emerald-300 ring-1 ring-emerald-500/20'
-                        : missingCount <= 2
-                        ? 'border-orange-200 hover:border-orange-300'
-                        : 'border-slate-200/80 opacity-90'
+                    className={`bg-white rounded-3xl border border-slate-200/90 hover:border-orange-200 transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-xs ${
+                      isReadyToCook ? 'ring-1 ring-orange-400/30' : ''
                     }`}
                   >
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start">
@@ -580,17 +576,15 @@ export const MyKitchenPage: React.FC = () => {
                           src={resolveRecipeImage(recipe.image, recipe.title || recipe.category)}
                           alt={recipe.title}
                           onError={(e) => handleImageError(e, resolveRecipeImage(null, recipe.title || recipe.category))}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                         />
-                        {/* % Match Badge */}
+                        {/* % Match Badge (Tối giản màu) */}
                         <div
-                          className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-xl text-[11px] font-black shadow-md flex items-center gap-1 ${
+                          className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-xl text-[11px] font-bold shadow-xs flex items-center gap-1 ${
                             isReadyToCook
-                              ? 'bg-emerald-500 text-white'
-                              : matchPercent >= 60
                               ? 'bg-orange-500 text-white'
-                              : 'bg-slate-800/80 text-white'
+                              : 'bg-slate-900/80 text-white backdrop-blur-xs'
                           }`}
                         >
                           <Sparkles className="w-3 h-3" />
@@ -602,23 +596,23 @@ export const MyKitchenPage: React.FC = () => {
                       <div className="flex-1 min-w-0 space-y-2.5 w-full">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-orange-100/70 text-orange-700 tracking-wider">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 tracking-wider">
                               {recipe.category} • {recipe.cookingTimeMinutes} phút
                             </span>
-                            <h3 className="text-base sm:text-lg font-black text-slate-900 hover:text-orange-600 transition-colors mt-1 font-heading">
+                            <h3 className="text-base sm:text-lg font-bold text-slate-900 hover:text-orange-600 transition-colors mt-1 font-heading">
                               <Link to={`/recipes/${recipe._id}`}>{recipe.title}</Link>
                             </h3>
                           </div>
 
-                          {/* Trạng thái nấu */}
+                          {/* Trạng thái nấu (Hạn chế màu sắc) */}
                           {isReadyToCook ? (
-                            <span className="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 text-orange-700 font-bold text-xs border border-orange-200/80">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" />
                               <span>100% Đủ nguyên liệu</span>
                             </span>
                           ) : (
-                            <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 font-bold text-xs border border-amber-200">
-                              <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200">
+                              <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
                               <span>Thiếu {missingCount} món</span>
                             </span>
                           )}
@@ -628,13 +622,13 @@ export const MyKitchenPage: React.FC = () => {
                           {recipe.description}
                         </p>
 
-                        {/* Breakdown nguyên liệu có và thiếu */}
-                        <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                        {/* Breakdown nguyên liệu (Đổi sang tông đen/xám trung tính, bỏ màu hồng/đỏ) */}
+                        <div className="pt-1 flex flex-col sm:flex-row flex-wrap sm:items-center gap-1.5 text-[11px]">
                           {matchedList.length > 0 && (
                             <div className="flex items-center gap-1 flex-wrap">
-                              <span className="text-emerald-700 font-bold">Đã có:</span>
+                              <span className="text-slate-500 font-medium">Đã có:</span>
                               {matchedList.map((m, i) => (
-                                <span key={i} className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-semibold">
+                                <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                                   ✓ {m}
                                 </span>
                               ))}
@@ -642,10 +636,10 @@ export const MyKitchenPage: React.FC = () => {
                           )}
 
                           {missingList.length > 0 && (
-                            <div className="flex items-center gap-1 flex-wrap mt-1">
-                              <span className="text-rose-600 font-bold">Cần mua:</span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="text-slate-700 font-bold">Cần mua:</span>
                               {missingList.map((m, i) => (
-                                <span key={i} className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60 font-semibold">
+                                <span key={i} className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-800 border border-slate-200 font-medium">
                                   + {m}
                                 </span>
                               ))}
@@ -657,20 +651,20 @@ export const MyKitchenPage: React.FC = () => {
                         <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
                           <Link
                             to={`/recipes/${recipe._id}`}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline transition-colors"
                           >
                             <span>Xem cách nấu chi tiết</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </Link>
 
                           <div className="flex items-center gap-2">
-                            {/* Nếu thiếu nguyên liệu: Có nút Thêm vào giỏ & Tìm siêu thị gần nhất */}
+                            {/* Nếu thiếu nguyên liệu: Nút cam chủ đạo & Nút trắng viền xám */}
                             {missingList.length > 0 && (
                               <>
                                 <button
                                   type="button"
                                   onClick={() => handleAddMissingToCart(recipe, missingList)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200 transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-2xs transition-all active:scale-95"
                                   title="Thêm các món còn thiếu vào giỏ đi chợ"
                                 >
                                   <ShoppingCart className="w-3.5 h-3.5" />
@@ -680,10 +674,10 @@ export const MyKitchenPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleFindSupermarket(missingList)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors shadow-2xs"
                                   title="Tìm siêu thị gần nhất có bán món này"
                                 >
-                                  <MapPin className="w-3.5 h-3.5 text-orange-600" />
+                                  <MapPin className="w-3.5 h-3.5 text-slate-500" />
                                   <span>Tìm siêu thị</span>
                                 </button>
                               </>
@@ -692,7 +686,7 @@ export const MyKitchenPage: React.FC = () => {
                             {isReadyToCook && (
                               <Link
                                 to={`/recipes/${recipe._id}`}
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
                               >
                                 <ChefHat className="w-3.5 h-3.5" />
                                 <span>Vào Bếp Nấu Ngay</span>
