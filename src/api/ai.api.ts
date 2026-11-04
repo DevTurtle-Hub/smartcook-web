@@ -16,10 +16,15 @@ export interface ScanDetectedIngredient {
   confidence: string | number;
   icon?: string;
   category?: string;
+  source?: 'visible' | 'inferred';
+  dishNames?: string[];
+  evidence?: string;
 }
 
 export interface ScanPin {
   text: string;
+  icon?: string;
+  confidence?: string;
   top: number;
   left: number;
 }
@@ -41,6 +46,7 @@ export interface ScanIngredientResult {
   imageUrl: string;
   image: string;
   accuracy: number;
+  dishes?: { name: string; confidence: string; icon?: string }[];
   ingredients: ScanDetectedIngredient[];
   pins: ScanPin[];
   suggestedRecipe: ScanSuggestedRecipe;
@@ -77,53 +83,46 @@ export const aiApi = {
   scanIngredients: async (
     fileOrData: File | FormData | { file?: File; imageBase64?: string; imageUrl?: string }
   ): Promise<ScanIngredientResult> => {
-    try {
-      let body: FormData | any;
-      let headers: Record<string, string> = {};
+    let body: FormData | any;
+    let headers: Record<string, string> = {};
 
-      if (fileOrData instanceof FormData) {
-        body = fileOrData;
-        headers['Content-Type'] = 'multipart/form-data';
-      } else if (fileOrData instanceof File) {
-        body = new FormData();
-        body.append('image', fileOrData);
-        headers['Content-Type'] = 'multipart/form-data';
-      } else if (fileOrData.file) {
-        body = new FormData();
-        body.append('image', fileOrData.file);
-        headers['Content-Type'] = 'multipart/form-data';
-      } else {
-        body = fileOrData;
-      }
-
-      const response = await apiClient.post('/ai/scan-ingredients', body, { headers });
-
-      if (response.data && response.data.data) {
-        const d = response.data.data;
-        return {
-          id: d.id || d._id || 'scan-' + Date.now(),
-          _id: d._id || d.id,
-          title: d.title || 'Quét thực phẩm mới',
-          imageUrl: d.imageUrl || d.image || '',
-          image: d.image || d.imageUrl || '',
-          accuracy: d.accuracy || 95,
-          ingredients: d.ingredients || [],
-          pins: d.pins || [],
-          suggestedRecipe: d.suggestedRecipe || {
-            title: 'Món ngon ngẫu hứng từ bếp',
-            desc: 'Gợi ý từ các nguyên liệu sẵn có trong ảnh',
-            calories: 450,
-            durationMinutes: 25,
-            matchPercent: 90,
-          },
-          scannedAt: d.scannedAt || new Date().toLocaleString('vi-VN'),
-        };
-      }
-      throw new Error('Dữ liệu phân tích AI không hợp lệ');
-    } catch (err: any) {
-      console.warn('[aiApi.scanIngredients] Backend failed or offline, fallback client result:', err?.message || err);
-      return getFallbackScanResult();
+    if (fileOrData instanceof FormData) {
+      body = fileOrData;
+      headers['Content-Type'] = 'multipart/form-data';
+    } else if (fileOrData instanceof File) {
+      body = new FormData();
+      body.append('image', fileOrData);
+      headers['Content-Type'] = 'multipart/form-data';
+    } else if (fileOrData.file) {
+      body = new FormData();
+      body.append('image', fileOrData.file);
+      headers['Content-Type'] = 'multipart/form-data';
+    } else {
+      body = fileOrData;
     }
+
+    const response = await apiClient.post('/ai/scan-ingredients', body, { headers, timeout: 150000 });
+
+    if (response.data && response.data.data) {
+      const d = response.data.data;
+      if (!Array.isArray(d.ingredients) || (!d.ingredients.length && !d.dishes?.length) || typeof d.accuracy !== 'number') {
+        throw new Error('AI chưa nhận diện được thực phẩm trong ảnh. Vui lòng thử ảnh rõ hơn.');
+      }
+      return {
+        id: d.id || d._id || 'scan-' + Date.now(),
+        _id: d._id || d.id,
+        title: d.title || 'Quét thực phẩm mới',
+        imageUrl: d.imageUrl || d.image || '',
+        image: d.image || d.imageUrl || '',
+        accuracy: d.accuracy ?? 0,
+        dishes: d.dishes || [],
+        ingredients: d.ingredients || [],
+        pins: d.pins || [],
+        suggestedRecipe: d.suggestedRecipe ? { ...d.suggestedRecipe, recipeId: d.suggestedRecipe.id || d.suggestedRecipe.recipeId } : undefined,
+        scannedAt: d.scannedAt || new Date().toLocaleString('vi-VN'),
+      };
+    }
+    throw new Error('Dữ liệu phân tích AI không hợp lệ');
   },
 
   /**
@@ -139,7 +138,8 @@ export const aiApi = {
           title: item.title || 'Quét thực phẩm',
           imageUrl: item.imageUrl || item.image || '',
           image: item.image || item.imageUrl || '',
-          accuracy: item.accuracy || 90,
+          accuracy: item.accuracy ?? 0,
+          dishes: item.dishes || [],
           ingredients: item.ingredients || [],
           pins: item.pins || [],
           suggestedRecipe: item.suggestedRecipe,
@@ -164,40 +164,6 @@ export const aiApi = {
     }
   },
 };
-
-/**
- * Phản hồi dự phòng khi quét ảnh ở chế độ demo/offline
- */
-function getFallbackScanResult(): ScanIngredientResult {
-  return {
-    id: 'fallback-scan-' + Date.now(),
-    title: 'Thực phẩm tươi sáng nay',
-    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
-    accuracy: 96,
-    ingredients: [
-      { name: 'Thịt ức gà phi lê', confidence: '98%', category: 'Thịt & Hải sản' },
-      { name: 'Cà chua Đà Lạt', confidence: '96%', category: 'Rau củ' },
-      { name: 'Bơ sáp 034', confidence: '94%', category: 'Rau củ' },
-      { name: 'Trứng gà ta', confidence: '95%', category: 'Trứng & Đậu hũ' },
-      { name: 'Hành lá tươi', confidence: '92%', category: 'Gia vị & Rau thơm' },
-    ],
-    pins: [
-      { text: '🍗 Ức gà (98%)', top: 35, left: 30 },
-      { text: '🍅 Cà chua (96%)', top: 55, left: 65 },
-      { text: '🥑 Bơ sáp (94%)', top: 68, left: 25 },
-      { text: '🥚 Trứng gà (95%)', top: 25, left: 70 },
-    ],
-    suggestedRecipe: {
-      title: 'Salad Ức Gà Bơ Sáp Sốt Chanh Leo',
-      desc: 'Món ăn Eat Clean cân bằng dinh dưỡng, thanh đạm và giàu protein, sẵn sàng nấu từ 100% nguyên liệu nhận diện.',
-      calories: 380,
-      durationMinutes: 20,
-      matchPercent: 95,
-    },
-    scannedAt: 'Vừa xong',
-  };
-}
 
 /**
  * Phản hồi dự phòng thông minh ở Client khi mất kết nối mạng hoặc server bận

@@ -21,16 +21,22 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../../components/user/UserHeader';
-import { aiApi, type ScanIngredientResult, type ScanDetectedIngredient, type ScanPin } from '../../api/ai.api';
+import { aiApi, type ScanIngredientResult, type ScanDetectedIngredient } from '../../api/ai.api';
 import { fridgeApi } from '../../api/fridge.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { toast } from '../../context/ToastContext';
 import { AuthRequiredModal } from '../../components/common/AuthRequiredModal';
 import { PreviewModeBanner } from '../../components/common/PreviewModeBanner';
 
+const foodIcons: Record<string, string> = {
+  'silverware-fork-knife': '🍽️', 'food-drumstick': '🍗', 'fruit-cherries': '🍒', 'food-apple': '🍎', fish: '🐟', leaf: '🥬',
+  'food-steak': '🥩', seed: '🌾', shaker: '🧂', 'bottle-tonic': '🥣', 'fruit-citrus': '🍋', egg: '🥚',
+};
+
 export const AIScanPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const scanRequestRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Modal yêu cầu đăng nhập khi chưa có tài khoản
@@ -41,6 +47,14 @@ export const AIScanPage: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanResult, setScanResult] = useState<ScanIngredientResult | null>(null);
+  const [selectedTargetName, setSelectedTargetName] = useState<string | null>(null);
+  const photoTargets: ScanDetectedIngredient[] = scanResult?.dishes?.length ? scanResult.dishes : scanResult?.ingredients || [];
+  const selectedTarget = photoTargets.find(target => target.name === selectedTargetName) || photoTargets[0];
+  const selectedIngredients = (scanResult?.ingredients || []).filter(item =>
+    item.source !== 'inferred' && (!scanResult?.dishes?.length || (!!selectedTarget && item.dishNames?.includes(selectedTarget.name))));
+  const hasIngredientLinks = (scanResult?.ingredients || []).some(item => item.dishNames?.length);
+  const selectedTargetIndex = selectedTarget ? photoTargets.indexOf(selectedTarget) : -1;
+  useEffect(() => { setSelectedTargetName(null); }, [scanResult]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Trạng thái thêm nguyên liệu vào tủ lạnh
@@ -79,15 +93,15 @@ export const AIScanPage: React.FC = () => {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
       const msg = 'Vui lòng chỉ chọn tệp hình ảnh (PNG, JPG, JPEG, WEBP)';
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      const msg = 'Kích thước ảnh vượt quá 10MB. Vui lòng chọn ảnh nhẹ hơn.';
+    if (file.size > 5 * 1024 * 1024) {
+      const msg = 'Kích thước ảnh vượt quá 5MB. Vui lòng chọn ảnh nhẹ hơn.';
       setErrorMessage(msg);
       toast.error(msg);
       return;
@@ -96,6 +110,7 @@ export const AIScanPage: React.FC = () => {
     setErrorMessage(null);
     setSelectedFile(file);
     const localUrl = URL.createObjectURL(file);
+    if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(localUrl);
     setAddedItemNames(new Set());
     setFridgeNotification(null);
@@ -126,20 +141,47 @@ export const AIScanPage: React.FC = () => {
 
   // Thực thi phân tích ảnh với Gemini Vision API
   const executeAIScan = async (fileToScan: File) => {
+    const requestId = ++scanRequestRef.current;
+    setScanResult(null);
     setIsScanning(true);
     setErrorMessage(null);
 
     try {
       const result = await aiApi.scanIngredients(fileToScan);
+      if (requestId !== scanRequestRef.current) return;
       setScanResult(result);
       if (isAuthenticated) {
         loadScanHistory();
       }
     } catch (err: any) {
+      if (requestId !== scanRequestRef.current) return;
       console.error('Lỗi khi quét ảnh AI:', err);
-      setErrorMessage(err?.message || 'Không thể phân tích ảnh lúc này. Vui lòng thử lại.');
+      setErrorMessage(err?.response?.data?.message || err?.message || 'Không thể phân tích ảnh lúc này. Vui lòng thử lại.');
     } finally {
-      setIsScanning(false);
+      if (requestId === scanRequestRef.current) setIsScanning(false);
+    }
+  };
+
+  const handleRescan = async () => {
+    if (selectedFile) { await executeAIScan(selectedFile); return; }
+    if (!previewUrl || isScanning) return;
+    const imageUrl = previewUrl;
+    const requestId = ++scanRequestRef.current;
+    setIsScanning(true);
+    setErrorMessage(null);
+    setScanResult(null);
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Không tải được ảnh lịch sử. Vui lòng chọn lại ảnh.');
+      const blob = await response.blob();
+      if (requestId !== scanRequestRef.current) return;
+      const file = new File([blob], 'scan-history-photo', { type: blob.type });
+      setSelectedFile(file);
+      await executeAIScan(file);
+    } catch (error) {
+      if (requestId === scanRequestRef.current) setErrorMessage(error instanceof Error ? error.message : 'Không tải được ảnh. Vui lòng chọn lại ảnh.');
+    } finally {
+      if (requestId === scanRequestRef.current) setIsScanning(false);
     }
   };
 
@@ -181,14 +223,14 @@ export const AIScanPage: React.FC = () => {
       return;
     }
 
-    if (!scanResult || scanResult.ingredients.length === 0) return;
+    if (!scanResult || selectedIngredients.length === 0) return;
 
     setAddingToFridge(true);
     let addedCount = 0;
 
     try {
-      for (const ing of scanResult.ingredients) {
-        if (!addedItemNames.has(ing.name)) {
+      for (const ing of selectedIngredients) {
+        if (ing.source !== 'inferred' && !addedItemNames.has(ing.name)) {
           await fridgeApi.addItem({
             name: ing.name,
             category: ing.category || 'Rau củ',
@@ -200,8 +242,7 @@ export const AIScanPage: React.FC = () => {
         }
       }
 
-      const allNames = new Set(scanResult.ingredients.map((i) => i.name));
-      setAddedItemNames(allNames);
+      setAddedItemNames(prev => new Set([...prev, ...selectedIngredients.map(item => item.name)]));
       toast.success(`🎉 Đã thêm thành công ${addedCount} nguyên liệu vào Tủ Lạnh!`, {
         action: {
           label: 'Xem Tủ Lạnh',
@@ -221,6 +262,7 @@ export const AIScanPage: React.FC = () => {
 
   // Xóa ảnh làm lại từ đầu
   const handleReset = () => {
+    ++scanRequestRef.current;
     setSelectedFile(null);
     setPreviewUrl(null);
     setScanResult(null);
@@ -233,6 +275,8 @@ export const AIScanPage: React.FC = () => {
 
   // Xem lại một kết quả từ lịch sử
   const handleSelectHistoryItem = (item: ScanIngredientResult) => {
+    ++scanRequestRef.current;
+    setIsScanning(false);
     setScanResult(item);
     setPreviewUrl(item.imageUrl || item.image || null);
     setSelectedFile(null);
@@ -277,7 +321,7 @@ export const AIScanPage: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/90 border border-orange-200 text-orange-700 text-xs font-extrabold tracking-wide uppercase shadow-xs">
             <Sparkles className="w-4 h-4 text-orange-600 animate-pulse" />
-            <span>Gemini Vision AI Engine • Độ Chính Xác 98%</span>
+            <span>Gemini Vision • Phân tích theo ảnh thực tế</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight font-heading">
@@ -437,7 +481,7 @@ export const AIScanPage: React.FC = () => {
                         Kéo thả hoặc bấm để tải ảnh nguyên liệu từ máy tính
                       </p>
                       <p className="text-xs text-slate-500">
-                        Hỗ trợ PNG, JPG, JPEG, WEBP (Tối đa 10MB)
+                        Hỗ trợ PNG, JPG, JPEG, WEBP (Tối đa 5MB)
                       </p>
                     </div>
                     <div className="pt-2">
@@ -454,7 +498,7 @@ export const AIScanPage: React.FC = () => {
                       <img
                         src={previewUrl}
                         alt="Scan preview"
-                        className="w-full max-h-[420px] object-cover object-center block"
+                        className="w-full h-auto block"
                       />
                       
                       {/* Scanning Animation Laser Line */}
@@ -468,28 +512,32 @@ export const AIScanPage: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Hiển thị Bounding Pins đè lên ảnh sau khi quét xong */}
-                      {!isScanning && scanResult && scanResult.pins && scanResult.pins.length > 0 && (
+                      {/* Only numbered dish markers occupy the photo; details appear one at a time. */}
+                      {!isScanning && scanResult && (
                         <div className="absolute inset-0 pointer-events-none">
-                          {scanResult.pins.map((pin: ScanPin, idx: number) => (
-                            <div
-                              key={idx}
-                              style={{
-                                top: `${Math.min(Math.max(pin.top, 8), 90)}%`,
-                                left: `${Math.min(Math.max(pin.left, 8), 85)}%`,
-                              }}
-                              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto group/pin animate-in fade-in zoom-in duration-300"
-                            >
-                              {/* Pulse beacon */}
-                              <span className="absolute -inset-1.5 rounded-full bg-orange-400/50 animate-ping" />
-                              
-                              {/* Pin Badge */}
-                              <div className="relative z-10 px-2.5 py-1 rounded-xl bg-slate-900/90 backdrop-blur-md text-white text-[11px] font-extrabold border border-orange-400/80 shadow-lg flex items-center gap-1.5 whitespace-nowrap hover:scale-110 transition-transform cursor-pointer">
-                                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                                <span>{pin.text}</span>
-                              </div>
+                          {photoTargets.map((target, index) => {
+                            const pin = scanResult.pins.find(item => item.text === target.name);
+                            if (!pin || !Number.isFinite(pin.top) || !Number.isFinite(pin.left) || pin.top < 0 || pin.top > 100 || pin.left < 0 || pin.left > 100) return null;
+                            const isSelected = selectedTarget?.name === target.name;
+                            return (
+                              <button key={target.name} type="button"
+                                aria-label={`Xem món ${index + 1}: ${target.name}`}
+                                aria-pressed={isSelected} title={target.name}
+                                onClick={() => setSelectedTargetName(target.name)}
+                                style={{ top: `${pin.top}%`, left: `${pin.left}%` }}
+                                className={`absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto min-w-10 h-10 px-2 rounded-full border-2 shadow-lg flex items-center justify-center gap-1 text-xs font-extrabold transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-500 ${isSelected ? 'bg-orange-500 text-white border-white ring-4 ring-orange-400/30 z-20' : 'bg-white/95 text-slate-800 border-orange-300 z-10 hover:bg-orange-50'}`}>
+                                <span aria-hidden="true">{foodIcons[target.icon || pin.icon || 'silverware-fork-knife'] || '🍽️'}</span>
+                                <span>{index + 1}</span>
+                              </button>
+                            );
+                          })}
+                          {selectedTarget && (
+                            <div className="absolute bottom-3 inset-x-3 rounded-2xl bg-slate-900/95 text-white shadow-lg px-3 py-2.5 flex items-center gap-3 border border-white/15" aria-live="polite" aria-atomic="true">
+                              <span className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center shrink-0 text-sm font-extrabold">{selectedTargetIndex + 1}</span>
+                              <span className="text-xl" aria-hidden="true">{foodIcons[selectedTarget.icon || 'silverware-fork-knife'] || '🍽️'}</span>
+                              <div className="min-w-0 flex-1"><p className="text-xs font-bold leading-relaxed break-words">{selectedTarget.name}</p><p className="text-[10px] text-slate-300 mt-0.5">Độ tin cậy AI ước tính: {selectedTarget.confidence}</p></div>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
 
@@ -497,11 +545,12 @@ export const AIScanPage: React.FC = () => {
                       {!isScanning && scanResult && (
                         <div className="absolute top-3 left-3 bg-emerald-500/95 text-white px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Độ chính xác: {scanResult.accuracy}%</span>
+                          <span>AI tự ước tính độ tin cậy: {scanResult.accuracy}%</span>
                         </div>
                       )}
                     </div>
 
+                    {scanResult && photoTargets.length > 0 && <p className="text-xs text-slate-500 text-center">Chọn số trên ảnh hoặc chọn món trong danh sách để xem chi tiết.</p>}
                     <div className="flex gap-3">
                       <button
                         onClick={() => fileInputRef.current?.click()}
@@ -511,9 +560,9 @@ export const AIScanPage: React.FC = () => {
                         <span>Đổi ảnh khác</span>
                       </button>
                       
-                      {selectedFile && (
+                      {previewUrl && (
                         <button
-                          onClick={() => executeAIScan(selectedFile)}
+                          onClick={handleRescan}
                           disabled={isScanning}
                           className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
                         >
@@ -529,27 +578,43 @@ export const AIScanPage: React.FC = () => {
               {/* CỘT PHẢI: KẾT QUẢ NHẬN DIỆN VÀ GỢI Ý MÓN ĂN */}
               <div className="lg:col-span-6 space-y-6">
                 
+                {scanResult && photoTargets.length > 0 && (
+                  <section className="bg-white rounded-3xl p-6 sm:p-8 border border-orange-100 shadow-sm space-y-4" aria-label="Danh sách món trong ảnh">
+                    <div><h3 className="font-bold text-base text-slate-900 flex items-center gap-2"><ChefHat className="w-5 h-5 text-orange-500" />{scanResult.dishes?.length ? 'Món ăn trong ảnh' : 'Thực phẩm trong ảnh'} ({photoTargets.length})</h3><p className="text-xs text-slate-500 mt-1">Số thứ tự tương ứng với dấu trên ảnh.</p></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
+                      {photoTargets.map((target, index) => (
+                        <button key={target.name} type="button" aria-pressed={selectedTarget?.name === target.name} onClick={() => setSelectedTargetName(target.name)}
+                          className={`w-full text-left flex items-start gap-3 p-3 rounded-2xl border transition-colors focus-visible:outline-2 focus-visible:outline-orange-500 ${selectedTarget?.name === target.name ? 'bg-orange-50 border-orange-400 ring-1 ring-orange-200' : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50/40'}`}>
+                          <span className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-xs font-extrabold ${selectedTarget?.name === target.name ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600'}`}>{index + 1}</span>
+                          <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-slate-900 leading-relaxed break-words"><span aria-hidden="true">{foodIcons[target.icon || 'silverware-fork-knife'] || '🍽️'}</span> {target.name}</span><span className="block text-[10px] text-slate-500 mt-1">AI ước tính · {target.confidence}</span></span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">Kết quả và độ tin cậy do AI ước tính. Hãy kiểm tra lại trước khi sử dụng.</p>
+                  </section>
+                )}
+
                 {/* Box 1: Danh sách nguyên liệu AI tìm thấy */}
                 <div className="bg-white rounded-3xl p-6 sm:p-8 border border-orange-100 shadow-sm space-y-5">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                       <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-orange-500" />
-                        <span>Nguyên Liệu Nhận Diện ({scanResult?.ingredients.length || 0})</span>
+                        <span>{scanResult?.dishes?.length ? 'Nguyên liệu của món' : 'Nguyên liệu nhận diện'} ({selectedIngredients.length})</span>
                       </h3>
                       {scanResult?.title && (
-                        <p className="text-xs text-slate-400 mt-0.5">{scanResult.title}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{scanResult.dishes?.length ? selectedTarget?.name : scanResult.title}</p>
                       )}
                     </div>
 
-                    {scanResult && scanResult.ingredients.length > 0 && (
+                    {scanResult && selectedIngredients.length > 0 && (
                       <button
                         onClick={handleAddAllToFridge}
                         disabled={addingToFridge}
                         className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 active:scale-95"
                       >
                         <Refrigerator className="w-3.5 h-3.5" />
-                        <span>{addingToFridge ? 'Đang thêm...' : '1-Click Thêm Tất Cả Vào Tủ Lạnh'}</span>
+                        <span>{addingToFridge ? 'Đang thêm...' : (scanResult?.dishes?.length ? 'Thêm nguyên liệu món này' : 'Thêm nguyên liệu vào tủ lạnh')}</span>
                       </button>
                     )}
                   </div>
@@ -562,24 +627,24 @@ export const AIScanPage: React.FC = () => {
                   ) : isScanning ? (
                     <div className="py-12 text-center space-y-3">
                       <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-xs font-semibold text-slate-600">Đang đối chiếu dữ liệu với thư viện 500+ loại thực phẩm...</p>
+                      <p className="text-xs font-semibold text-slate-600">Đang phân tích món ăn và nguyên liệu trong ảnh...</p>
                     </div>
-                  ) : scanResult && scanResult.ingredients.length > 0 ? (
+                  ) : scanResult && selectedIngredients.length > 0 ? (
                     <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
-                      {scanResult.ingredients.map((item: ScanDetectedIngredient, idx: number) => {
+                      {selectedIngredients.map((item: ScanDetectedIngredient, idx: number) => {
                         const isAdded = addedItemNames.has(item.name);
                         return (
                           <div
                             key={idx}
                             className="flex items-center justify-between p-3 rounded-2xl bg-orange-50/50 border border-orange-100 hover:border-orange-200 transition-colors"
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">
-                                {idx + 1}
+                                <span aria-hidden="true">{foodIcons[item.icon || 'silverware-fork-knife'] || '🍽️'}</span>
                               </div>
-                              <div>
-                                <p className="text-xs font-bold text-slate-900">{item.name}</p>
-                                <p className="text-[10px] text-slate-500">{item.category || 'Thực phẩm'}</p>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-900 break-words">{item.name}</p>
+                                <p className="text-[10px] text-slate-500 break-words">{item.evidence || item.category || 'Quan sát trong ảnh'}</p>
                               </div>
                             </div>
 
@@ -593,7 +658,7 @@ export const AIScanPage: React.FC = () => {
 
                               <button
                                 onClick={() => handleAddSingleItemToFridge(item)}
-                                disabled={isAdded}
+                                disabled={isAdded || item.source === 'inferred'}
                                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
                                   isAdded
                                     ? 'bg-emerald-100 text-emerald-700 cursor-default'
@@ -619,7 +684,7 @@ export const AIScanPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-slate-400 text-xs">
-                      Không nhận diện được nguyên liệu rõ ràng trong bức ảnh này. Vui lòng chụp rõ nét hơn.
+                      {errorMessage ? 'Chưa có kết quả nhận diện vì lượt quét chưa thành công. Vui lòng xem thông báo lỗi ở trên.' : scanResult?.dishes?.length && !hasIngredientLinks ? 'Lần quét này chưa có liên kết nguyên liệu theo món. Vui lòng quét lại ảnh để phân tích từng món.' : 'Chưa xác định rõ nguyên liệu nhìn thấy của món này. Hệ thống không tự suy đoán gia vị hoặc thành phần bị che.'}
                     </div>
                   )}
                 </div>
@@ -634,7 +699,7 @@ export const AIScanPage: React.FC = () => {
                           <span>Món Ăn Gợi Ý Nấu Ngay</span>
                         </h3>
                         <p className="text-xs text-slate-500">
-                          Tối ưu từ các nguyên liệu tìm thấy ({scanResult.suggestedRecipe.matchPercent || 95}% trùng khớp)
+                          Tối ưu từ các nguyên liệu tìm thấy ({scanResult.suggestedRecipe.matchPercent ?? 0}% trùng khớp)
                         </p>
                       </div>
                       <Link
@@ -666,11 +731,11 @@ export const AIScanPage: React.FC = () => {
                         <div className="flex items-center gap-4 text-slate-500 font-medium">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-orange-500" />
-                            <span>{scanResult.suggestedRecipe.durationMinutes || 25} phút</span>
+                            <span>{scanResult.suggestedRecipe.durationMinutes ?? 0} phút</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <Flame className="w-3.5 h-3.5 text-amber-500" />
-                            <span>{scanResult.suggestedRecipe.calories || 450} kcal</span>
+                            <span>{scanResult.suggestedRecipe.calories ?? 0} kcal</span>
                           </span>
                         </div>
 
@@ -799,7 +864,7 @@ export const AIScanPage: React.FC = () => {
 
                     <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs">
                       <span className="text-[11px] font-bold text-emerald-600">
-                        {item.accuracy}% độ chính xác
+                        {item.accuracy}% độ tin cậy AI ước tính
                       </span>
                       <span className="text-[11px] font-bold text-orange-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                         <span>Xem chi tiết</span>
