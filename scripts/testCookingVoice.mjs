@@ -326,5 +326,53 @@ try {
     for (let i = 0; i < 58; i++) assert.equal(click(0.001, 100), 'listening');
     assert.equal(click(0.001, 100), 'empty');
   });
+  await check('returning to an already-read step always announces its number and full instructions', async () => {
+    const { cookingStepAnnouncement } = await server.ssrLoadModule('/src/utils/cookingStepSpeech.ts');
+    const first = request.recipeContext.steps[0];
+    assert.match(cookingStepAnnouncement(first, 2), /Đã quay lại bước 1.*Hầm xương bò với gừng\./s);
+    assert.match(cookingStepAnnouncement(first), /Bắt đầu hướng dẫn.*Hầm xương bò với gừng\./s);
+    const stepTwo = { ...request, currentStep: request.recipeContext.steps[1] };
+    for (const text of ['Lùi bước', 'Quay lại bước 1']) {
+      const result = localCookingReply({ ...stepTwo, userVoiceText: text });
+      assert.match(result.speechReply, /bước 1.*Hầm xương bò với gừng\./s);
+      assert.match(result.speechReply, /quay lại bước 1/);
+    }
+  });
+  await check('browser recognition sends final Vietnamese text once without calling Gemini transcription', async () => {
+    const { listenCookingCommand } = await server.ssrLoadModule('/src/utils/cookingRecognition.ts');
+    let instance;
+    class Recognition {
+      constructor() { instance = this; }
+      start() { this.onstart?.(); }
+      stop() { this.onend?.(); }
+      abort() { this.aborted = true; }
+    }
+    const received = [], errors = [], partial = [];
+    let started = 0;
+    const callbacks = { onStart: () => started++, onTranscript: text => partial.push(text), onText: text => received.push(text), onError: text => errors.push(text) };
+    const count = requests.length;
+    const capture = listenCookingCommand(Recognition, callbacks);
+    assert.equal(instance.lang, 'vi-VN');
+    assert.equal(started, 1);
+    instance.onresult({ results: [{ isFinal: false, 0: { transcript: 'quay lại' } }] });
+    assert.equal(received.length, 0, 'Never execute an unfinished command');
+    instance.onresult({ results: [{ isFinal: true, 0: { transcript: 'quay lại bước một' } }] });
+    capture.stop(); capture.cancel();
+    assert.deepEqual(received, ['quay lại bước một']);
+    assert.equal(partial[0], 'quay lại');
+    assert.deepEqual(errors, []);
+    assert.equal(requests.length, count);
+    const cancelled = listenCookingCommand(Recognition, callbacks);
+    const staleResult = instance.onresult;
+    const staleEnd = instance.onend;
+    cancelled.cancel();
+    staleResult({ results: [{ isFinal: true, 0: { transcript: 'Bước tiếp theo' } }] });
+    staleEnd();
+    assert.deepEqual(received, ['quay lại bước một'], 'Leaving a step cannot submit old speech');
+    listenCookingCommand(Recognition, callbacks);
+    instance.onerror({ error: 'not-allowed' });
+    assert.match(errors[0], /quyền/);
+    assert.equal(instance.aborted, true);
+  });
   console.log(`${passed} cooking voice checks passed.`);
 } finally { await server.close(); }

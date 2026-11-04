@@ -4,6 +4,7 @@ import type { CookingCommand } from '../utils/cookingCommands';
 import { getCookingFactReply, getCookingScopeReply } from '../utils/cookingScope';
 import type { CookingScopeContext } from '../utils/cookingScope';
 import { useAuthStore } from '../store/useAuthStore';
+import { cookingStepAnnouncement } from '../utils/cookingStepSpeech';
 
 export interface CookingVoiceRequest extends CookingScopeContext {
   userVoiceText: string;
@@ -21,7 +22,14 @@ export function localCookingReply(request: CookingVoiceRequest): CookingVoiceRep
   const refusal = getCookingScopeReply(request.userVoiceText, request);
   if (refusal) return { action: 'NONE', speechReply: refusal, suggestedQuickReplies: [] };
   const command = resolveCookingCommand(request.userVoiceText, request);
-  if (command) return command;
+  if (command) {
+    const target = command.actionPayload?.targetStep;
+    if (command.action === 'GO_TO_STEP' && target !== undefined && target < request.currentStep.stepNumber) {
+      const step = request.recipeContext?.steps.find(item => item.stepNumber === target);
+      if (step) return { ...command, speechReply: cookingStepAnnouncement({ ...step, description: step.description || '' }, request.currentStep.stepNumber) };
+    }
+    return command;
+  }
   const fact = getCookingFactReply(request.userVoiceText, request);
   return fact ? { action: 'NONE', speechReply: fact } : null;
 }

@@ -759,7 +759,7 @@ export const RecipeDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <CookingVoiceAssistant key={recipe._id} recipeId={recipe._id} onAction={handleVoiceAction}
+            <CookingVoiceAssistant key={recipe._id} recipeId={recipe._id} onAction={handleVoiceAction} cookingActive={isCookingMode}
               onInteraction={() => sendTimer({ type: 'pauseGrace' })} context={{
               recipeTitle: recipe.title.slice(0, 160),
               currentStep: { stepNumber: currentCookingStep.stepNumber, title: currentCookingStep.title.slice(0, 160), description: currentCookingStep.instruction.slice(0, 1600) },
