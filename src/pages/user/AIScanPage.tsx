@@ -22,6 +22,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../../components/user/UserHeader';
 import { aiApi, type ScanIngredientResult, type ScanDetectedIngredient } from '../../api/ai.api';
+import { NearbyStoresCard } from '../../components/supermarket/NearbyStoresCard';
 import { fridgeApi } from '../../api/fridge.api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { toast } from '../../context/ToastContext';
@@ -688,6 +689,8 @@ export const AIScanPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {scanResult && <NearbyStoresCard />}
 
                 {/* Box 2: Món ăn đề xuất tức thì dựa trên ảnh quét */}
                 {scanResult && scanResult.suggestedRecipe && (
