@@ -20,6 +20,7 @@ import {
   Award,
   ShoppingCart,
   Refrigerator,
+  MapPin,
   ArrowRight
 } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
@@ -106,6 +107,11 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
       icon: Camera,
     },
     {
+      label: 'Siêu Thị',
+      path: '/supermarkets',
+      icon: MapPin,
+    },
+    {
       label: 'Cộng Đồng',
       path: '/community',
       icon: MessageCircle,
@@ -153,12 +159,12 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 h-20 flex items-center justify-between">
           
           {/* 1. CỘT TRÁI: LOGO & THƯƠNG HIỆU */}
-          <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 flex items-center justify-center shadow-md shadow-orange-500/25 group-hover:scale-105 group-hover:shadow-orange-500/40 transition-all duration-300">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 flex items-center justify-center shadow-md shadow-orange-500/25 group-hover:scale-105 group-hover:shadow-orange-500/40 transition-all duration-300">
               <ChefHat className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-          <div>
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center font-heading">
+          <div className="hidden min-[360px]:block">
+            <span className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 flex items-center font-heading">
               Smart<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600">Cook</span>
             </span>
             <span className="text-[9px] sm:text-[10px] font-extrabold text-orange-600 tracking-widest uppercase block -mt-1">
@@ -168,7 +174,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
         </Link>
 
         {/* 2. CỘT GIỮA: NAVIGATION THOÁNG ĐÃNG, CHỮ NẰM NGANG, KHÔNG ĐÓNG KHUNG MÀU */}
-        <nav className="hidden md:flex items-center gap-7 lg:gap-10 h-full">
+        <nav className="hidden 2xl:flex items-center gap-5 2xl:gap-7 h-full">
           {isAuthenticated ? (
             authenticatedNavItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -275,15 +281,16 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
               </Link>
             </div>
           )}
+          {!isAuthenticated && <Link to="/supermarkets" className={`flex items-center gap-2 py-7 text-sm font-bold whitespace-nowrap ${location.pathname === '/supermarkets' ? 'text-orange-600' : 'text-slate-600 hover:text-orange-500'}`}><MapPin className="w-4 h-4" />Siêu thị</Link>}
         </nav>
 
         {/* 3. CỘT PHẢI: TẢI APP, GIỎ HÀNG & TÀI KHOẢN NGƯỜI DÙNG */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           
           {/* NÚT TIN NHẮN BẾP (CULINARY CHAT LOUNGE) */}
           <button
             onClick={toggleChat}
-            className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs group cursor-pointer ${
+            className={`relative hidden sm:inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl transition-all duration-200 shadow-2xs hover:shadow-xs group cursor-pointer ${
               isAuthenticated
                 ? 'bg-white hover:bg-orange-50/80 border border-slate-200/90 hover:border-orange-300'
                 : 'bg-gradient-to-r from-orange-50/90 via-amber-50/80 to-white hover:from-orange-100/90 hover:to-amber-100/90 border border-orange-200/90 hover:border-orange-300 text-slate-800 hover:scale-[1.02] active:scale-95'
@@ -445,7 +452,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
             </div>
           ) : (
             // USER CHƯA ĐĂNG NHẬP: Nút Đăng nhập & Đăng ký
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <Link
                 to="/auth/login"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-100/50 transition-all"
@@ -467,7 +474,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
           {/* Nút Mobile Hamburger */}
           <button
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            className="md:hidden p-2 rounded-xl text-slate-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+            className="2xl:hidden p-2 rounded-xl text-slate-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -478,7 +485,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
 
       {/* MOBILE DRAWER */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#faf8f5] border-b border-orange-200/80 px-4 pt-2 pb-6 space-y-3 animate-in slide-in-from-top-4 duration-200">
+        <div className="2xl:hidden bg-[#faf8f5] border-b border-orange-200/80 px-4 pt-2 pb-6 space-y-3 animate-in slide-in-from-top-4 duration-200">
           <div className="space-y-1">
             {isAuthenticated ? (
               authenticatedNavItems.map((item) => {
@@ -504,6 +511,7 @@ export const UserHeader: React.FC<UserHeaderProps> = () => {
               })
             ) : (
               <div className="space-y-1">
+                <Link to="/supermarkets" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-800 hover:bg-orange-50"><MapPin className="w-4 h-4" />Siêu thị gần bạn</Link>
                 <Link
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}

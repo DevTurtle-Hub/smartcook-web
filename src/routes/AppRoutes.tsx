@@ -34,6 +34,8 @@ const CommunityPage = lazyLoad(() => import('../pages/public/CommunityPage'), 'C
 const ProfilePage = lazyLoad(() => import('../pages/user/ProfilePage'), 'ProfilePage');
 const MyKitchenPage = lazyLoad(() => import('../pages/user/MyKitchenPage'), 'MyKitchenPage');
 
+const NearbySupermarketsPage = lazyLoad(() => import('../pages/user/NearbySupermarketsPage'), 'NearbySupermarketsPage');
+
 // Auth Guard component for User Routes
 const ProtectedUserRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
@@ -62,6 +64,7 @@ export const AppRoutes: React.FC = () => {
 
         {/* 4. Trang Scan Chụp/Tải Ảnh AI (Có hướng dẫn tải app mobile) */}
         <Route path="/scan" element={<AIScanPage />} />
+        <Route path="/supermarkets" element={<NearbySupermarketsPage />} />
 
         {/* 4. Trang Cộng Đồng (Đăng bài, chat, bình luận, thả tim) */}
         <Route path="/community" element={<CommunityPage />} />

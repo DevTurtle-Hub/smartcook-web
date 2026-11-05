@@ -31,7 +31,7 @@ export const storeApi = {
       return res.data.data || [];
     } catch (err: any) {
       console.warn('[SmartCook Web] getNearbyStores error:', err.message);
-      return [];
+      throw err;
     }
   },
 

@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { NearbyStoresCard } from '../supermarket/NearbyStoresCard';
 import { createPortal } from 'react-dom';
 import { 
   ShoppingCart, 
@@ -16,6 +18,7 @@ import {
 import { useCartStore } from '../../store/useCartStore';
 
 export const GroceryCartDrawer: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     items, 
     isCartOpen, 
@@ -92,6 +95,7 @@ export const GroceryCartDrawer: React.FC = () => {
 
           {/* DANH SÁCH MÓN ĂN & NGUYÊN LIỆU TRONG GIỎ HÀNG */}
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+            <NearbyStoresCard onOpen={closeCart} />
             {items.length === 0 ? (
               <div className="text-center py-16 space-y-3">
                 <div className="w-16 h-16 rounded-3xl bg-orange-50 text-orange-400 flex items-center justify-center mx-auto shadow-inner">
@@ -177,8 +181,8 @@ export const GroceryCartDrawer: React.FC = () => {
                   <span className="font-bold text-slate-800">{checkedCount} món</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
-                  <span>Ước tính giá siêu thị gần bạn:</span>
-                  <span className="text-emerald-600 font-bold">Giá tốt nhất</span>
+                  <span>Giá nguyên liệu:</span>
+                  <span className="text-slate-500 font-bold">Tham khảo</span>
                 </div>
                 <div className="pt-2 border-t border-slate-200/60 flex items-baseline justify-between">
                   <span className="text-sm font-bold text-slate-900">Tổng tiền ước tính:</span>
@@ -194,7 +198,8 @@ export const GroceryCartDrawer: React.FC = () => {
               <div className="space-y-2">
                 <button
                   onClick={() => {
-                    alert(`Đã lưu danh sách ${checkedCount} nguyên liệu đi chợ (${totalPrice.toLocaleString('vi-VN')} đ). Bạn có thể mở app SmartCook trên điện thoại để đồng bộ siêu thị giao tận nhà!`);
+                    closeCart();
+                    navigate('/supermarkets');
                   }}
                   className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-sm shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/35 transition-all flex items-center justify-center gap-2 group"
                 >
@@ -205,7 +210,7 @@ export const GroceryCartDrawer: React.FC = () => {
 
                 <p className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Đồng bộ tự động với WinMart, Co.opmart & Bách Hóa Xanh</span>
+                  <span>Xem cửa hàng và chỉ đường ngay trên web</span>
                 </p>
               </div>
 

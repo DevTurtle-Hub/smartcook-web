@@ -10,10 +10,11 @@ interface Props {
   context: Omit<CookingVoiceRequest, 'userVoiceText' | 'conversationHistory'>;
   onAction: (reply: CookingVoiceReply) => void;
   onInteraction?: () => void;
+  cookingActive?: boolean;
 }
 
-export function CookingVoiceAssistant({ recipeId, context, onAction, onInteraction }: Props) {
-  const voice = useCookingVoice(context, recipeId, onAction);
+export function CookingVoiceAssistant({ recipeId, context, onAction, onInteraction, cookingActive }: Props) {
+  const voice = useCookingVoice(context, recipeId, onAction, cookingActive);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [expanded, setExpanded] = useState(true);
   const [draft, setDraft] = useState('');
@@ -70,6 +71,7 @@ export function CookingVoiceAssistant({ recipeId, context, onAction, onInteracti
             {voice.phase === 'recording' ? <Square size={18} /> : busy ? <LoaderCircle size={18} className="animate-spin" /> : <Mic size={18} />}
             {voice.phase === 'recording' ? 'Dừng và gửi' : 'Chạm để nói'}
           </button>
+          {voice.error && !busy && <button type="button" disabled={!isAuthenticated} onClick={() => void voice.startRecording(true)} className="text-xs font-semibold text-emerald-800 underline disabled:opacity-50">Ghi âm dự phòng qua AI</button>}
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
             {busy && <button type="button" onClick={voice.cancel} className="flex items-center gap-1"><X size={16} /> Hủy</button>}
             <button type="button" disabled={busy || !voice.reply} onClick={() => voice.isSpeaking ? voice.stopSpeech() : voice.speak(voice.reply)} className="flex items-center gap-1 disabled:opacity-40">
