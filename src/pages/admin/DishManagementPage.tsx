@@ -27,6 +27,7 @@ import {
 import { useAdminStore } from '../../store/useAdminStore';
 import type { DishRecipeAdmin, SystemIngredient } from '../../types/admin';
 import { recipeApi } from '../../api/recipe.api';
+import { RecipeVideoEditor } from '../../components/recipe/RecipeVideoEditor';
 import { resolveRecipeImage, handleImageError } from '../../utils/imageFallback';
 
 export const DishManagementPage: React.FC = () => {
@@ -59,6 +60,7 @@ export const DishManagementPage: React.FC = () => {
             id: r._id || r.id,
             title: r.title,
             description: r.description || '',
+            youtubeVideoId: r.youtubeVideoId,
             category: r.categoryCode || r.category || 'Món Việt',
             subCategory: r.subCategory || '',
             prepTimeMinutes: r.prepTime || 10,
@@ -1163,6 +1165,19 @@ export const DishManagementPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/^[a-f0-9]{24}$/i.test(viewingDish.id) && (
+                  <RecipeVideoEditor
+                    key={viewingDish.id}
+                    recipeId={viewingDish.id}
+                    youtubeVideoId={viewingDish.youtubeVideoId}
+                    onSaved={(youtubeVideoId) => {
+                      const dishId = viewingDish.id;
+                      updateRecipe(dishId, { youtubeVideoId });
+                      setViewingDish((dish) => dish?.id === dishId ? { ...dish, youtubeVideoId } : dish);
+                    }}
+                  />
+                )}
 
                 {/* Khối 4 Thẻ Thông Số Tối Giản */}
                 <div className="grid grid-cols-2 gap-2.5 pt-1">

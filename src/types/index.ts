@@ -36,6 +36,7 @@ export interface Recipe {
   title: string;
   description: string;
   image: string;
+  youtubeVideoId?: string | null;
   category: string;
   cookingTimeMinutes: number;
   difficulty: 'Dễ' | 'Trung bình' | 'Khó' | string;

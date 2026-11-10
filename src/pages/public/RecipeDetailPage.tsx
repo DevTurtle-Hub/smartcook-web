@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CookingStepTimers } from '../../components/ai/CookingStepTimers';
 import { CookingVoiceAssistant } from '../../components/ai/CookingVoiceAssistant';
+import { RecipeVideoGuide, type RecipeVideoControls } from '../../components/recipe/RecipeVideoGuide';
 import { useCookingSession } from '../../hooks/useCookingSession';
 import { normalizeCookingNutrition } from '../../utils/cookingScope';
 import { cookingStepSeconds } from '../../utils/cookingTimer';
@@ -22,7 +23,8 @@ import {
   ShoppingBag,
   Info,
   CheckCheck,
-  MapPin
+  MapPin,
+  Video
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { recipeApi } from '../../api/recipe.api';
@@ -90,6 +92,8 @@ export const RecipeDetailPage: React.FC = () => {
 
   const [isCookingMode, setIsCookingMode] = useState(false);
   const cookingStepsRef = useRef<HTMLDivElement>(null);
+  const videoControls = useRef<RecipeVideoControls>(null);
+  const [videoVoiceTarget, setVideoVoiceTarget] = useState<HTMLDivElement | null>(null);
 
   const { data: recipeData } = useQuery({
     queryKey: ['recipe', id],
@@ -98,6 +102,7 @@ export const RecipeDetailPage: React.FC = () => {
   });
 
   const fallbackMatch = richFallbackRecipes.find((r) => r._id === id);
+  const hasRecipe = Boolean(recipeData || fallbackMatch);
 
   const defaultRecipe: ExtendedRecipe = {
     _id: id || 'seed-chicken-rice',
@@ -523,6 +528,15 @@ export const RecipeDetailPage: React.FC = () => {
                 {recipe.description}
               </p>
 
+              {hasRecipe && (
+                <a
+                  href="#recipe-video"
+                  className="inline-flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600"
+                >
+                  <Video aria-hidden="true" className="size-4" /> Video hướng dẫn
+                </a>
+              )}
+
               {/* Tỉ lệ Macro Tối Giản Nằm Liền Mạch */}
               <div className="flex flex-wrap items-center gap-4 sm:gap-8 pt-2 text-xs">
                 <div>
@@ -694,6 +708,17 @@ export const RecipeDetailPage: React.FC = () => {
               </div>
             </div>
 
+            {hasRecipe && (
+              <RecipeVideoGuide
+                key={`${recipe._id}:${recipe.youtubeVideoId ?? ''}`}
+                title={recipe.title}
+                image={recipe.image}
+                youtubeVideoId={recipe.youtubeVideoId}
+                ref={videoControls}
+                onVoiceTarget={setVideoVoiceTarget}
+              />
+            )}
+
             {/* 3. CÔNG THỨC CÁC BƯỚC NẤU (TIMELINE ĐƠN GIẢN, HIỆN ĐẠI, KHÔNG VIỀN HỘP) */}
             <div ref={cookingStepsRef} className="space-y-4 pt-2">
               <div className="flex items-center justify-between">
@@ -760,6 +785,8 @@ export const RecipeDetailPage: React.FC = () => {
             </div>
 
             <CookingVoiceAssistant key={recipe._id} recipeId={recipe._id} onAction={handleVoiceAction} cookingActive={isCookingMode}
+              onVideoCommand={(command) => videoControls.current?.run(command) ?? 'Chưa tải được mục video của công thức này.'}
+              videoVoiceTarget={videoVoiceTarget}
               onInteraction={() => sendTimer({ type: 'pauseGrace' })} context={{
               recipeTitle: recipe.title.slice(0, 160),
               currentStep: { stepNumber: currentCookingStep.stepNumber, title: currentCookingStep.title.slice(0, 160), description: currentCookingStep.instruction.slice(0, 1600) },
