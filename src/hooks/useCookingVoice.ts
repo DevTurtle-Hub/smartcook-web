@@ -7,11 +7,12 @@ import { audioBlobBase64, prepareCookingAudio, recordingMimeType } from '../util
 import { watchCookingSpeech } from '../utils/cookingSpeechEnd';
 import { cookingRecognitionConstructor, listenCookingCommand } from '../utils/cookingRecognition';
 import { cookingStepAnnouncement } from '../utils/cookingStepSpeech';
+import { parseRecipeVideoCommand, type RecipeVideoCommand } from '../utils/recipeVideoCommands';
 
 type Phase = 'idle' | 'permission' | 'recording' | 'transcribing' | 'thinking';
 type Context = Omit<CookingVoiceRequest, 'userVoiceText' | 'conversationHistory'>;
 
-export function useCookingVoice(context: Context, recipeId: string, onAction: (reply: CookingVoiceReply) => void, cookingActive = false) {
+export function useCookingVoice(context: Context, recipeId: string, onAction: (reply: CookingVoiceReply) => void, cookingActive = false, onVideoCommand?: (command: RecipeVideoCommand) => string) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [transcript, setTranscript] = useState('');
   const [reply, setReply] = useState('');
@@ -19,8 +20,8 @@ export function useCookingVoice(context: Context, recipeId: string, onAction: (r
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [readReplies, setReadReplies] = useState(true);
   const [quickReplies, setQuickReplies] = useState(['Đọc lại', 'Đang ở bước nào?', 'Thêm 2 phút']);
-  const latest = useRef({ context, onAction, readReplies });
-  useEffect(() => { latest.current = { context, onAction, readReplies }; }, [context, onAction, readReplies]);
+  const latest = useRef({ context, onAction, readReplies, onVideoCommand });
+  useEffect(() => { latest.current = { context, onAction, readReplies, onVideoCommand }; }, [context, onAction, readReplies, onVideoCommand]);
   const session = useRef(0);
   const busy = useRef(false);
   const controller = useRef<AbortController | null>(null);
@@ -136,6 +137,14 @@ export function useCookingVoice(context: Context, recipeId: string, onAction: (r
     setQuickReplies([]);
     setError('');
     setPhase('thinking');
+    const videoCommand = latest.current.onVideoCommand && parseRecipeVideoCommand(text);
+    if (videoCommand && latest.current.onVideoCommand) {
+      const message = latest.current.onVideoCommand(videoCommand);
+      setReply(message);
+      setQuickReplies(['Mở video hướng dẫn', 'Tua tới 30 giây', 'Tạm dừng video']);
+      if (latest.current.readReplies) speak(message);
+      return;
+    }
     const answer = await cookingVoiceApi.ask(request, requestController.signal);
     if (token !== session.current) return;
     setReply(answer.speechReply);

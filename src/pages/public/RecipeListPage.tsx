@@ -32,6 +32,7 @@ export interface ExtendedRecipe extends Recipe {
 export const richFallbackRecipes: ExtendedRecipe[] = [
   {
     _id: 'seed-chicken-rice',
+    youtubeVideoId: '6J6gZT-fVFk',
     title: 'Cơm Đùi Gà Trứng Ốp',
     description: 'Đùi gà rim sốt mật ong đậm đà ăn kèm trứng ốp la lòng đào béo ngậy, bơ sáp và cà chua bi thanh mát.',
     image: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800&q=80',
@@ -62,6 +63,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-1',
+    youtubeVideoId: 'OrhdeqVWI_4',
     title: 'Thịt Kho Tàu Trứng Cút Nước Dừa',
     description: 'Thịt ba chỉ mềm rục ngấm trọn nước dừa xiêm Bến Tre, trứng cút bùi béo màu cánh gián tự nhiên.',
     image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80',
@@ -82,6 +84,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-2',
+    youtubeVideoId: '5QA6p1AW-Ac',
     title: 'Canh Chua Cá Hồi Miền Tây',
     description: 'Vị chua thanh mát của me và dứa kết hợp cá hồi giàu omega-3, dọc mùng giòn sần sật.',
     image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=80',
@@ -102,6 +105,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-3',
+    youtubeVideoId: 'FC4mVUwWSVU',
     title: 'Ức Gà Áp Chảo Sốt Bơ Tỏi Mật Ong',
     description: 'Món ăn chuẩn Healthy ít calo, ức gà mềm ngọt không bị khô, hòa quyện sốt bơ tỏi thơm lừng.',
     image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=700&auto=format&fit=crop&q=80',
@@ -122,6 +126,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-4',
+    youtubeVideoId: 'afrDkH5uZpk',
     title: 'Bò Bít Tết Sốt Tiêu Đen Kiểu Pháp',
     description: 'Thịt thăn bò mềm mọng nước ăn kèm măng tây áp chảo và sốt tiêu đen cay nồng quý phái.',
     image: 'https://images.unsplash.com/photo-1558030006-450675393462?w=700&auto=format&fit=crop&q=80',
@@ -130,8 +135,20 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
     difficulty: 'Cao cấp',
     servingsCount: 2,
     nutrition: { calories: 480, proteinGrams: 45, carbsGrams: 10, fatGrams: 28 },
-    ingredients: [],
-    steps: [],
+    ingredients: [
+      { name: 'Thịt thăn bò', amount: 400, unit: 'g' },
+      { name: 'Măng tây', amount: 200, unit: 'g' },
+      { name: 'Tiêu đen đập dập', amount: 2, unit: 'thìa cà phê' },
+      { name: 'Bơ lạt', amount: 20, unit: 'g' },
+      { name: 'Nước dùng bò', amount: 120, unit: 'ml' },
+      { name: 'Kem tươi', amount: 80, unit: 'ml' },
+    ],
+    steps: [
+      { stepNumber: 1, instruction: 'Thấm khô hai mặt miếng bò, nêm muối và một ít tiêu. Rửa sạch măng tây, cắt bỏ phần gốc già.', timerMinutes: 4 },
+      { stepNumber: 2, instruction: 'Làm nóng chảo với một ít dầu, áp chảo bò đến độ chín mong muốn tùy độ dày miếng thịt. Gắp bò ra đĩa nghỉ, giữ lại phần nước thịt trong chảo.', timerMinutes: 6 },
+      { stepNumber: 3, instruction: 'Hạ lửa, cho tiêu đen và nước dùng bò vào chảo, cạo nhẹ đáy chảo. Đun cho nước dùng rút bớt rồi thêm kem tươi, khuấy đến khi sốt sánh.', timerMinutes: 5 },
+      { stepNumber: 4, instruction: 'Áp chảo măng tây với bơ đến khi xanh giòn. Xếp bò và măng tây ra đĩa, rưới sốt tiêu đen lên bò rồi dùng nóng.', timerMinutes: 4 },
+    ],
     ratingAverage: 5.0,
     ratingsCount: 520,
     createdAt: new Date().toISOString(),
@@ -142,6 +159,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-5',
+    youtubeVideoId: '47NudacNSe8',
     title: 'Sườn Xào Chua Ngọt Bắc Bộ',
     description: 'Sườn non chặt khúc đảo vàng óng, nước sốt cà chua giấm bỗng chua ngọt sánh quyện đậm đà.',
     image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=700&auto=format&fit=crop&q=80',
@@ -162,6 +180,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-6',
+    youtubeVideoId: '5bsCZIjcF6E',
     title: 'Salad Cá Hồi Bơ Sáp Dầu Giấm',
     description: 'Rau xà lách rocket tươi giòn cùng bơ sáp béo ngậy và cá hồi hun khói giàu dưỡng chất.',
     image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=700&auto=format&fit=crop&q=80',
@@ -182,6 +201,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-7',
+    youtubeVideoId: 'ZNnDDeqtGFc',
     title: 'Phở Bò Tái Lăn Hà Nội',
     description: 'Nước dùng ninh xương 12 tiếng thơm quế hồi, thịt bò xào lăn lửa lớn dậy mùi tỏi gừng.',
     image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=700&auto=format&fit=crop&q=80',
@@ -202,6 +222,7 @@ export const richFallbackRecipes: ExtendedRecipe[] = [
   },
   {
     _id: 'seed-8',
+    youtubeVideoId: 'Z9ehs94KreY',
     title: 'Tôm Sốt Bơ Tỏi Chanh Vàng',
     description: 'Tôm sú tươi giòn sốt ngập tràn bơ lạt Pháp, tỏi băm thơm phức và chút chanh thanh tao.',
     image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=700&auto=format&fit=crop&q=80',

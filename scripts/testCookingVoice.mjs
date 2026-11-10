@@ -22,6 +22,51 @@ try {
     userVoiceText: '',
   };
   const signal = new AbortController().signal;
+  const { parseRecipeVideoCommand } = await server.ssrLoadModule('/src/utils/recipeVideoCommands.ts');
+  const { controlYouTubeVideo } = await server.ssrLoadModule('/src/utils/youtubePlayer.ts');
+  await check('Vietnamese recipe video controls interpret duration, speed, pause and negation', () => {
+    for (const [text, command] of [
+      ['mở video hướng dẫn nấu ăn', { type: 'open' }],
+      ['Bạn có thể mở video hướng dẫn giúp mình không?', { type: 'open' }],
+      ['Tua nhanh 30s', { type: 'seek', seconds: 30 }],
+      ['Tua nhanh 1p', { type: 'seek', seconds: 60 }],
+      ['Tua chậm 1p', { type: 'seek', seconds: -60 }],
+      ['Tua lùi một phút ba mươi giây', { type: 'seek', seconds: -90 }],
+      ['Tua tới nửa phút', { type: 'seek', seconds: 30 }],
+      ['Tua chậm', { type: 'rate', direction: 'slower' }],
+      ['Phát video nhanh hơn', { type: 'rate', direction: 'faster' }],
+      ['Tốc độ bình thường', { type: 'rate', direction: 'normal' }],
+      ['Dừng lại', { type: 'pause' }],
+      ['Tiếp tục phát video', { type: 'play' }],
+      ['Đóng video', { type: 'close' }],
+      ['Đừng mở video', { type: 'ignore' }],
+      ['Đừng dừng video', { type: 'ignore' }],
+      ['Tua lùi -30s', { type: 'invalid-time' }],
+      ['Tua lùi 10000 phút', { type: 'invalid-time' }],
+      ['Thêm 2 phút', null],
+      ['Lùi 1 phút', null],
+      ['Dừng hẹn giờ', null],
+      ['Tại sao phải dừng video?', null],
+      ['Chuyển sang bước 2', null],
+    ]) assert.deepEqual(parseRecipeVideoCommand(text), command, text);
+  });
+  await check('video seek clamps to media bounds and speed uses available YouTube rates', () => {
+    const calls = [];
+    const player = {
+      getCurrentTime: () => 20,
+      getDuration: () => 54,
+      getPlaybackRate: () => 1,
+      getAvailablePlaybackRates: () => [1.5, 0.5, 1],
+      playVideo: () => calls.push('play'),
+      pauseVideo: () => calls.push('pause'),
+      seekTo: (...args) => calls.push(args),
+      setPlaybackRate: (rate) => calls.push(rate),
+    };
+    for (const text of ['Tua nhanh 1p', 'Tua lùi 1p', 'Phát chậm hơn', 'Phát nhanh hơn', 'Dừng lại', 'Phát tiếp']) {
+      assert.ok(controlYouTubeVideo(player, parseRecipeVideoCommand(text)));
+    }
+    assert.deepEqual(calls, [[54, true], [0, true], 0.5, 1.5, 'pause', 'play']);
+  });
   let requests = [];
   apiClient.defaults.adapter = async (config) => {
     requests.push(config);

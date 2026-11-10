@@ -59,6 +59,7 @@ export interface DishRecipeAdmin {
   id: string;
   title: string;
   description: string;
+  youtubeVideoId?: string | null;
   category: string; // Gia đình, Sức khỏe, Eat Clean, Món Việt, Món Âu...
   subCategory?: string;
   prepTimeMinutes: number;
